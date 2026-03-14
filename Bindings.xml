@@ -1,0 +1,5 @@
+<Bindings>
+  <Binding name="CATFISH_FISHING" Category="Catfish">
+    Catfish.Modules.OneKey:OnBindingPressed()
+  </Binding>
+</Bindings>
