@@ -50,6 +50,44 @@ local function HasFishingBuff()
     return false
 end
 
+-- Check if player needs to use Gigantic Bobber toy
+local GIGANTIC_BOBBER_BUFF_ID = 397827
+local GIGANTIC_BOBBER_TOY_ID = 202207
+local GIGANTIC_BOBBER_NAME = nil  -- Will be cached on first use
+
+local function GetGiganticBobberName()
+    if not GIGANTIC_BOBBER_NAME then
+        GIGANTIC_BOBBER_NAME = Catfish.API:GetItemName(GIGANTIC_BOBBER_TOY_ID)
+    end
+    return GIGANTIC_BOBBER_NAME
+end
+
+local function NeedsGiganticBobber()
+    if not Catfish.db.useGiganticBobber then
+        return false
+    end
+
+    -- Check if player already has the buff
+    local hasBuff = Catfish.API:UnitHasBuff("player", GIGANTIC_BOBBER_BUFF_ID)
+    if hasBuff then
+        return false
+    end
+
+    -- Check if player has the toy
+    local hasToy = Catfish.API:PlayerHasToy(GIGANTIC_BOBBER_TOY_ID)
+    if not hasToy then
+        return false
+    end
+
+    -- Check if toy is on cooldown
+    local cooldown = Catfish.API:GetToyCooldown(GIGANTIC_BOBBER_TOY_ID)
+    if cooldown > 0 then
+        return false
+    end
+
+    return true
+end
+
 local function SetFishingBinding()
     if InCombatLockdown() then return false end
     if not DoubleClick.bindingFrame then return false end
@@ -67,6 +105,19 @@ local function SetFishingBinding()
         Catfish:Debug("SetOverrideBinding:", DoubleClick.bindKey, "-> INTERACTTARGET, success:", tostring(success))
         return success
     else
+        -- Check if we need to use Gigantic Bobber toy first
+        if NeedsGiganticBobber() then
+            -- Set up the toy button with macro (like Angleur does)
+            local toyName = GetGiganticBobberName()
+            if toyName then
+                Catfish.API:SetToyButtonMacro(toyName)
+                -- Bind to click the toy button
+                local success = SetOverrideBindingClick(DoubleClick.bindingFrame, true, DoubleClick.bindKey, "CatfishToyButton")
+                Catfish:Debug("SetOverrideBindingClick:", DoubleClick.bindKey, "-> CatfishToyButton, toyName:", toyName, "success:", tostring(success))
+                return success
+            end
+        end
+
         -- Bind to fishing spell for casting
         local spellName = GetFishingSpellName()
         if not spellName then

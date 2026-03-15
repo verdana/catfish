@@ -200,6 +200,11 @@ function Core:StartFishing()
         return false
     end
 
+    -- Use configured toys (rafts, bobbers, extra toys) if auto-toys is enabled
+    if Catfish.db.autoToys and Catfish.Modules.Toys then
+        Catfish.Modules.Toys:UseConfiguredToys()
+    end
+
     -- Use Gigantic Bobber if enabled (returns true if toy was used)
     -- Don't cast fishing if toy was used - player needs to wait for cast time
     if Catfish.db.useGiganticBobber then
@@ -292,26 +297,29 @@ function Core:OnSpellCastStart(unit, castGUID, spellID)
     if unit ~= "player" then return end
     if not Catfish.API:IsFishingSpell(spellID) then return end
 
+    -- Use configured toys (rafts, bobbers, extra toys) if auto-toys is enabled
+    -- This happens during the cast, most toys can be used without interrupting
+    if Catfish.db.autoToys and Catfish.Modules.Toys then
+        Catfish.Modules.Toys:UseConfiguredToys()
+    end
+
     -- Check if we should use Gigantic Bobber before fishing
     if Catfish.db.useGiganticBobber then
         local hasBuff = Catfish.API:UnitHasBuff("player", GIGANTIC_BOBBER_BUFF_ID)
         local hasToy = Catfish.API:PlayerHasToy(GIGANTIC_BOBBER_TOY_ID)
         local cooldown = hasToy and Catfish.API:GetToyCooldown(GIGANTIC_BOBBER_TOY_ID) or 0
 
-        Catfish:Print("=== SpellCastStart Intercept ===")
-        Catfish:Print("Has buff:", hasBuff and "YES" or "NO")
-        Catfish:Print("Has toy:", hasToy and "YES" or "NO")
-        Catfish:Print("Cooldown:", cooldown)
+        Catfish:Debug("SpellCastStart: Gigantic Bobber - HasBuff:", tostring(hasBuff), "HasToy:", tostring(hasToy), "Cooldown:", cooldown)
 
         if not hasBuff and hasToy and cooldown == 0 then
             -- Cancel the fishing cast and use toy instead
-            Catfish:Print("Cancelling fishing cast to use toy first")
+            Catfish:Debug("Cancelling fishing cast to use Gigantic Bobber first")
             SpellStopCasting()
             self:SetState(State.IDLE)
 
             -- Use the toy
             local result = Catfish.API:UseToy(GIGANTIC_BOBBER_TOY_ID)
-            Catfish:Print("UseToy result:", result and "SUCCESS" or "FAILED")
+            Catfish:Debug("UseToy result:", tostring(result))
             return
         end
     end
@@ -323,26 +331,29 @@ function Core:OnSpellCastChannelStart(unit, castGUID, spellID)
     if unit ~= "player" then return end
     if not Catfish.API:IsFishingSpell(spellID) then return end
 
+    -- Use configured toys (rafts, bobbers, extra toys) if auto-toys is enabled
+    -- This handles the case where channel starts directly (some fishing modes)
+    if Catfish.db.autoToys and Catfish.Modules.Toys then
+        Catfish.Modules.Toys:UseConfiguredToys()
+    end
+
     -- Check if we should use Gigantic Bobber before fishing
     if Catfish.db.useGiganticBobber then
         local hasBuff = Catfish.API:UnitHasBuff("player", GIGANTIC_BOBBER_BUFF_ID)
         local hasToy = Catfish.API:PlayerHasToy(GIGANTIC_BOBBER_TOY_ID)
         local cooldown = hasToy and Catfish.API:GetToyCooldown(GIGANTIC_BOBBER_TOY_ID) or 0
 
-        Catfish:Print("=== ChannelStart Intercept ===")
-        Catfish:Print("Has buff:", hasBuff and "YES" or "NO")
-        Catfish:Print("Has toy:", hasToy and "YES" or "NO")
-        Catfish:Print("Cooldown:", cooldown)
+        Catfish:Debug("ChannelStart: Gigantic Bobber - HasBuff:", tostring(hasBuff), "HasToy:", tostring(hasToy), "Cooldown:", cooldown)
 
         if not hasBuff and hasToy and cooldown == 0 then
             -- Cancel the fishing channel and use toy instead
-            Catfish:Print("Cancelling fishing channel to use toy first")
+            Catfish:Debug("Cancelling fishing channel to use Gigantic Bobber first")
             SpellStopCasting()
             self:SetState(State.IDLE)
 
             -- Use the toy
             local result = Catfish.API:UseToy(GIGANTIC_BOBBER_TOY_ID)
-            Catfish:Print("UseToy result:", result and "SUCCESS" or "FAILED")
+            Catfish:Debug("UseToy result:", tostring(result))
             return
         end
     end

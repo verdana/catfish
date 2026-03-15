@@ -42,6 +42,44 @@ local function HasFishingBuff()
     return false
 end
 
+-- Check if player needs to use Gigantic Bobber toy
+local GIGANTIC_BOBBER_BUFF_ID = 397827
+local GIGANTIC_BOBBER_TOY_ID = 202207
+local GIGANTIC_BOBBER_NAME = nil  -- Will be cached on first use
+
+local function GetGiganticBobberName()
+    if not GIGANTIC_BOBBER_NAME then
+        GIGANTIC_BOBBER_NAME = Catfish.API:GetItemName(GIGANTIC_BOBBER_TOY_ID)
+    end
+    return GIGANTIC_BOBBER_NAME
+end
+
+local function NeedsGiganticBobber()
+    if not Catfish.db.useGiganticBobber then
+        return false
+    end
+
+    -- Check if player already has the buff
+    local hasBuff = Catfish.API:UnitHasBuff("player", GIGANTIC_BOBBER_BUFF_ID)
+    if hasBuff then
+        return false
+    end
+
+    -- Check if player has the toy
+    local hasToy = Catfish.API:PlayerHasToy(GIGANTIC_BOBBER_TOY_ID)
+    if not hasToy then
+        return false
+    end
+
+    -- Check if toy is on cooldown
+    local cooldown = Catfish.API:GetToyCooldown(GIGANTIC_BOBBER_TOY_ID)
+    if cooldown > 0 then
+        return false
+    end
+
+    return true
+end
+
 -- ============================================
 -- Fishing Action Button Creation
 -- This button handles the actual fishing logic
@@ -162,11 +200,22 @@ function OneKey:UpdateBinding()
             return
         end
 
-        -- Bind to fishing spell directly (toy logic handled by Core:StartFishing via events)
-        -- We need to let Core intercept before the cast
-        local spellName = GetFishingSpellName()
-        if spellName then
-            SetOverrideBindingSpell(self.autoButton, true, normalizedKey, spellName)
+        -- Check if we need to use Gigantic Bobber toy first
+        if NeedsGiganticBobber() then
+            -- Set up the toy button with macro (like Angleur does)
+            local toyName = GetGiganticBobberName()
+            if toyName then
+                Catfish.API:SetToyButtonMacro(toyName)
+                -- Bind to click the toy button
+                SetOverrideBindingClick(self.autoButton, true, normalizedKey, "CatfishToyButton")
+                Catfish:Debug("OneKey: Binding to Gigantic Bobber toy button:", toyName)
+            end
+        else
+            -- Bind to fishing spell directly
+            local spellName = GetFishingSpellName()
+            if spellName then
+                SetOverrideBindingSpell(self.autoButton, true, normalizedKey, spellName)
+            end
         end
     end
 end

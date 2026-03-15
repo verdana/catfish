@@ -429,6 +429,7 @@ local function CreateOtherPanel()
     CreatePanelHeader(panel, "其它", function()
         -- 重置为默认值
         Catfish.db.useGiganticBobber = false
+        Catfish.db.autoToys = true
     end)
 
     -- 内容区从分割线下方开始
@@ -487,6 +488,16 @@ local function CreateOtherPanel()
 
         return check
     end
+
+    -- Auto Use Toys
+    CreateCheckbox(
+        "自动使用玩具",
+        Catfish.db.autoToys,
+        "钓鱼时自动使用配置的木筏、鱼漂等玩具",
+        function(checked)
+            Catfish.db.autoToys = checked
+        end
+    )
 
     -- Use Gigantic Bobber
     CreateCheckbox(

@@ -22,6 +22,7 @@ local DEFAULT_DB = {
     oneKeyEnabled = true,
     doubleClickEnabled = false,
     useGiganticBobber = false,  -- 使用巨型鱼漂
+    autoToys = true,  -- 自动使用玩具（木筏、鱼漂等）
     stats = {
         total = {
             catches = 0,
@@ -190,6 +191,9 @@ frame:SetScript("OnEvent", function(self, event, arg1, ...)
         -- Initialize API (secure buttons, etc.)
         if Catfish.API and Catfish.API.InitInteractButton then
             Catfish.API:InitInteractButton()
+        end
+        if Catfish.API and Catfish.API.InitToyButton then
+            Catfish.API:InitToyButton()
         end
 
         -- Initialize modules

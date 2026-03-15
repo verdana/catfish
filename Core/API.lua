@@ -176,6 +176,61 @@ end
 -- Toy APIs
 -- ============================================
 
+-- Secure button for using toys
+local toyButton = nil
+
+function API:InitToyButton()
+    if toyButton then return end
+
+    -- Create a secure button for using toys (using macro type like Angleur)
+    toyButton = CreateFrame("Button", "CatfishToyButton", UIParent, "SecureActionButtonTemplate")
+    toyButton:SetSize(1, 1)
+    toyButton:SetPoint("CENTER", UIParent, "CENTER", 10000, 10000)
+    toyButton:SetAttribute("type", "macro")
+    toyButton:RegisterForClicks("AnyDown", "AnyUp")
+    toyButton:Show()  -- Keep button visible (like Angleur)
+end
+
+function API:GetToyButton()
+    return toyButton
+end
+
+function API:SetToyButtonMacro(toyName)
+    if InCombatLockdown() then
+        return false
+    end
+
+    if not toyButton then
+        self:InitToyButton()
+    end
+
+    toyButton:SetAttribute("macrotext", "/cast " .. toyName)
+    return true
+end
+
+function API:UseToySecure(itemID)
+    if InCombatLockdown() then
+        return false
+    end
+
+    if not self:PlayerHasToy(itemID) then
+        return false
+    end
+
+    -- Initialize button (if needed)
+    if not toyButton then
+        self:InitToyButton()
+    end
+
+    -- Set item ID
+    toyButton:SetAttribute("item", "item:" .. itemID)
+
+    -- Click button to use item
+    toyButton:Click()
+
+    return true
+end
+
 function API:PlayerHasToy(itemID)
     return PlayerHasToy(itemID)
 end
@@ -205,15 +260,8 @@ function API:UseToy(itemID)
         return false
     end
 
-    -- Use macro command which is always allowed
-    Catfish:Print("Using macro command for toy:", itemID)
-    local success, err = pcall(function()
-        RunMacroText("/use item:" .. itemID)
-    end)
-    if not success then
-        Catfish:Print("RunMacroText failed:", err)
-    end
-    return success
+    -- Use secure button instead of macro command
+    return self:UseToySecure(itemID)
 end
 
 function API:GetToyCooldown(itemID)
