@@ -34,6 +34,7 @@ local REGISTERED_EVENTS = {
     "UNIT_INVENTORY_CHANGED",
     "UNIT_AURA",
     "CURSOR_CHANGED",
+    "GET_ITEM_INFO_RECEIVED",  -- For item data delayed loading
 }
 
 -- ============================================
@@ -80,8 +81,23 @@ function Events.UNIT_SPELLCAST_INTERRUPTED(unit, castGUID, spellID)
     end
 end
 
+-- Giant Bobber toy constants
+local GIGANTIC_BOBBER_BUFF_ID = 397827
+local GIGANTIC_BOBBER_TOY_ID = 202207
+
 function Events.UNIT_SPELLCAST_SUCCEEDED(unit, castGUID, spellID)
-    -- Catfish:Debug("Spell succeeded:", spellID)
+    if unit ~= "player" then return end
+
+    -- Check for Gigantic Bobber buff application
+    -- The toy applies a buff with spellID 397827
+    if spellID == GIGANTIC_BOBBER_BUFF_ID then
+        Catfish:Debug("Events: Gigantic Bobber buff applied (spellID:", spellID, ")")
+
+        -- Notify OneKey module to update binding
+        if Catfish.Modules and Catfish.Modules.OneKey then
+            Catfish.Modules.OneKey:OnToyUsed(GIGANTIC_BOBBER_TOY_ID)
+        end
+    end
 end
 
 -- ============================================
@@ -289,6 +305,28 @@ function Events.CHAT_MSG_SYSTEM(message)
         local newSkill = message:match("increased to (%d+)")
         if newSkill then
             Catfish:Debug("Fishing skill increased to:", newSkill)
+        end
+    end
+end
+
+-- ============================================
+-- Item Data Events
+-- ============================================
+
+local GIGANTIC_BOBBER_TOY_ID = 202207
+
+function Events.GET_ITEM_INFO_RECEIVED(itemID, success)
+    -- When Gigantic Bobber item data is received, update the keybinding
+    if itemID == GIGANTIC_BOBBER_TOY_ID and success then
+        local itemName = GetItemInfo(itemID)
+        Catfish:Debug("GET_ITEM_INFO_RECEIVED: Gigantic Bobber data loaded:", itemName)
+
+        -- Update OneKey cache and binding
+        if Catfish.Modules and Catfish.Modules.OneKey then
+            if Catfish.Modules.OneKey.UpdateGiganticBobberCache then
+                Catfish.Modules.OneKey:UpdateGiganticBobberCache()
+            end
+            Catfish.Modules.OneKey:UpdateBinding()
         end
     end
 end

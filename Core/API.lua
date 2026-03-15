@@ -81,6 +81,13 @@ end
 
 function API:CastFishing()
     if self:CanCastFishing() then
+        -- Check and enable auto loot if needed
+        if Catfish.db.keepAutoLoot then
+            if GetCVar("autoLootDefault") ~= "1" then
+                SetCVar("autoLootDefault", "1")
+            end
+        end
+
         local spellName = self:GetFishingSpellName()
         if spellName then
             if C_Spell and C_Spell.CastSpellByName then
@@ -182,13 +189,15 @@ local toyButton = nil
 function API:InitToyButton()
     if toyButton then return end
 
-    -- Create a secure button for using toys (using macro type like Angleur)
+    Catfish:Debug("API:InitToyButton - Creating toy button")
+    -- Create a secure button for using toys
     toyButton = CreateFrame("Button", "CatfishToyButton", UIParent, "SecureActionButtonTemplate")
     toyButton:SetSize(1, 1)
     toyButton:SetPoint("CENTER", UIParent, "CENTER", 10000, 10000)
-    toyButton:SetAttribute("type", "macro")
     toyButton:RegisterForClicks("AnyDown", "AnyUp")
-    toyButton:Show()  -- Keep button visible (like Angleur)
+    -- Set initial valid state to prevent errors
+    toyButton:SetAttribute("type", "item")
+    toyButton:Hide()  -- Hide until needed
 end
 
 function API:GetToyButton()
@@ -196,7 +205,15 @@ function API:GetToyButton()
 end
 
 function API:SetToyButtonMacro(toyName)
+    Catfish:Debug("API:SetToyButtonMacro called with toyName:", tostring(toyName))
+
     if InCombatLockdown() then
+        Catfish:Debug("API:SetToyButtonMacro - In combat, returning false")
+        return false
+    end
+
+    if not toyName or toyName == "" then
+        Catfish:Debug("API:SetToyButtonMacro - Invalid toy name, returning false")
         return false
     end
 
@@ -204,16 +221,25 @@ function API:SetToyButtonMacro(toyName)
         self:InitToyButton()
     end
 
+    -- Set the macro text for the toy
+    toyButton:SetAttribute("type", "macro")
     toyButton:SetAttribute("macrotext", "/cast " .. toyName)
+    toyButton:Show()
+
+    Catfish:Debug("API:SetToyButtonMacro - Button configured, macrotext:", "/cast " .. toyName)
     return true
 end
 
 function API:UseToySecure(itemID)
+    Catfish:Debug("API:UseToySecure called with itemID:", itemID)
+
     if InCombatLockdown() then
+        Catfish:Debug("API:UseToySecure - In combat, returning false")
         return false
     end
 
     if not self:PlayerHasToy(itemID) then
+        Catfish:Debug("API:UseToySecure - Player doesn't have toy, returning false")
         return false
     end
 
@@ -222,12 +248,19 @@ function API:UseToySecure(itemID)
         self:InitToyButton()
     end
 
-    -- Set item ID
+    -- Set button type to item and configure it
+    toyButton:SetAttribute("type", "item")
     toyButton:SetAttribute("item", "item:" .. itemID)
+    toyButton:Show()
+
+    Catfish:Debug("API:UseToySecure - Button type:", tostring(toyButton:GetAttribute("type")))
+    Catfish:Debug("API:UseToySecure - Button item:", tostring(toyButton:GetAttribute("item")))
+    Catfish:Debug("API:UseToySecure - About to click button...")
 
     -- Click button to use item
     toyButton:Click()
 
+    Catfish:Debug("API:UseToySecure - Button clicked successfully")
     return true
 end
 

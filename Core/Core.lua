@@ -134,6 +134,14 @@ end
 function Core:EnterCasting()
     Catfish:Debug("Entered CASTING state")
 
+    -- Ensure auto loot is enabled if the option is set
+    if Catfish.db.keepAutoLoot then
+        if GetCVar("autoLootDefault") ~= "1" then
+            SetCVar("autoLootDefault", "1")
+            Catfish:Debug("Auto loot enabled")
+        end
+    end
+
     self.castStartTime = GetTime()
     self.lastCastTime = GetTime()
 end
@@ -303,26 +311,9 @@ function Core:OnSpellCastStart(unit, castGUID, spellID)
         Catfish.Modules.Toys:UseConfiguredToys()
     end
 
-    -- Check if we should use Gigantic Bobber before fishing
-    if Catfish.db.useGiganticBobber then
-        local hasBuff = Catfish.API:UnitHasBuff("player", GIGANTIC_BOBBER_BUFF_ID)
-        local hasToy = Catfish.API:PlayerHasToy(GIGANTIC_BOBBER_TOY_ID)
-        local cooldown = hasToy and Catfish.API:GetToyCooldown(GIGANTIC_BOBBER_TOY_ID) or 0
-
-        Catfish:Debug("SpellCastStart: Gigantic Bobber - HasBuff:", tostring(hasBuff), "HasToy:", tostring(hasToy), "Cooldown:", cooldown)
-
-        if not hasBuff and hasToy and cooldown == 0 then
-            -- Cancel the fishing cast and use toy instead
-            Catfish:Debug("Cancelling fishing cast to use Gigantic Bobber first")
-            SpellStopCasting()
-            self:SetState(State.IDLE)
-
-            -- Use the toy
-            local result = Catfish.API:UseToy(GIGANTIC_BOBBER_TOY_ID)
-            Catfish:Debug("UseToy result:", tostring(result))
-            return
-        end
-    end
+    -- NOTE: Gigantic Bobber is handled by the keybinding system in OneKey.lua
+    -- We cannot auto-use toys from event handlers as it requires a hardware event.
+    -- The binding is set up to use the toy when the player presses the key.
 
     self:SetState(State.CASTING)
 end
@@ -331,32 +322,23 @@ function Core:OnSpellCastChannelStart(unit, castGUID, spellID)
     if unit ~= "player" then return end
     if not Catfish.API:IsFishingSpell(spellID) then return end
 
+    -- Ensure auto loot is enabled if the option is set
+    if Catfish.db.keepAutoLoot then
+        if GetCVar("autoLootDefault") ~= "1" then
+            SetCVar("autoLootDefault", "1")
+            Catfish:Debug("Auto loot enabled")
+        end
+    end
+
     -- Use configured toys (rafts, bobbers, extra toys) if auto-toys is enabled
     -- This handles the case where channel starts directly (some fishing modes)
     if Catfish.db.autoToys and Catfish.Modules.Toys then
         Catfish.Modules.Toys:UseConfiguredToys()
     end
 
-    -- Check if we should use Gigantic Bobber before fishing
-    if Catfish.db.useGiganticBobber then
-        local hasBuff = Catfish.API:UnitHasBuff("player", GIGANTIC_BOBBER_BUFF_ID)
-        local hasToy = Catfish.API:PlayerHasToy(GIGANTIC_BOBBER_TOY_ID)
-        local cooldown = hasToy and Catfish.API:GetToyCooldown(GIGANTIC_BOBBER_TOY_ID) or 0
-
-        Catfish:Debug("ChannelStart: Gigantic Bobber - HasBuff:", tostring(hasBuff), "HasToy:", tostring(hasToy), "Cooldown:", cooldown)
-
-        if not hasBuff and hasToy and cooldown == 0 then
-            -- Cancel the fishing channel and use toy instead
-            Catfish:Debug("Cancelling fishing channel to use Gigantic Bobber first")
-            SpellStopCasting()
-            self:SetState(State.IDLE)
-
-            -- Use the toy
-            local result = Catfish.API:UseToy(GIGANTIC_BOBBER_TOY_ID)
-            Catfish:Debug("UseToy result:", tostring(result))
-            return
-        end
-    end
+    -- NOTE: Gigantic Bobber is handled by the keybinding system in OneKey.lua
+    -- We cannot auto-use toys from event handlers as it requires a hardware event.
+    -- The binding is set up to use the toy when the player presses the key.
 
     -- Transition to waiting when channel starts (bobber is in water)
     self:SetState(State.WAITING)

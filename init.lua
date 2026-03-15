@@ -23,6 +23,7 @@ local DEFAULT_DB = {
     doubleClickEnabled = false,
     useGiganticBobber = false,  -- 使用巨型鱼漂
     autoToys = true,  -- 自动使用玩具（木筏、鱼漂等）
+    keepAutoLoot = true,  -- 保持自动拾取
     stats = {
         total = {
             catches = 0,
@@ -174,7 +175,7 @@ end
 -- Debug print
 function Catfish:Debug(...)
     if self.db and self.db.debugMode then
-        print("|cFFFFAA00[Catfish Debug]|r", ...)
+        print("|cFFFFAA00[Catfish]|r", ...)
     end
 end
 
@@ -257,6 +258,13 @@ frame:SetScript("OnEvent", function(self, event, arg1, ...)
             Catfish.Modules.Toys:ScanToys()
         end
 
+        -- Update OneKey binding after a short delay to allow item data to load
+        C_Timer.After(1.0, function()
+            if Catfish.Modules.OneKey then
+                Catfish.Modules.OneKey:UpdateBinding()
+            end
+        end)
+
     elseif event == "PLAYER_LOGIN" then
         Catfish:Debug("Player logged in")
 
@@ -273,6 +281,18 @@ frame:SetScript("OnEvent", function(self, event, arg1, ...)
         if success and fishingSpell then
             Catfish.hasFishingSkill = true
             Catfish:Debug("Fishing skill confirmed:", fishingSpell)
+        end
+
+        -- Preload Gigantic Bobber item data (item ID 202207)
+        -- This triggers the client to request the data from the server
+        -- so it's available when the player starts fishing
+        if GetItemInfo then
+            local itemName = GetItemInfo(202207)
+            if itemName then
+                Catfish:Debug("Preloaded Gigantic Bobber item:", itemName)
+            else
+                Catfish:Debug("Gigantic Bobber item data not yet available, will be loaded on first use")
+            end
         end
     end
 end)

@@ -48,35 +48,54 @@ local GIGANTIC_BOBBER_TOY_ID = 202207
 local GIGANTIC_BOBBER_NAME = nil  -- Will be cached on first use
 
 local function GetGiganticBobberName()
-    if not GIGANTIC_BOBBER_NAME then
-        GIGANTIC_BOBBER_NAME = Catfish.API:GetItemName(GIGANTIC_BOBBER_TOY_ID)
+    if GIGANTIC_BOBBER_NAME then
+        return GIGANTIC_BOBBER_NAME
     end
-    return GIGANTIC_BOBBER_NAME
+    local name = Catfish.API:GetItemName(GIGANTIC_BOBBER_TOY_ID)
+    Catfish:Debug("OneKey: GetGiganticBobberName - GetItemName returned:", tostring(name))
+    if name then
+        GIGANTIC_BOBBER_NAME = name  -- 只缓存有效名称
+    end
+    return name
+end
+
+-- Public function to update the cached name (called when item data is received)
+function OneKey:UpdateGiganticBobberCache()
+    local name = Catfish.API:GetItemName(GIGANTIC_BOBBER_TOY_ID)
+    if name then
+        GIGANTIC_BOBBER_NAME = name
+        Catfish:Debug("OneKey: Updated Gigantic Bobber cache:", name)
+    end
 end
 
 local function NeedsGiganticBobber()
     if not Catfish.db.useGiganticBobber then
+        Catfish:Debug("OneKey: NeedsGiganticBobber - option disabled")
         return false
     end
 
     -- Check if player already has the buff
     local hasBuff = Catfish.API:UnitHasBuff("player", GIGANTIC_BOBBER_BUFF_ID)
     if hasBuff then
+        Catfish:Debug("OneKey: NeedsGiganticBobber - already has buff")
         return false
     end
 
     -- Check if player has the toy
     local hasToy = Catfish.API:PlayerHasToy(GIGANTIC_BOBBER_TOY_ID)
     if not hasToy then
+        Catfish:Debug("OneKey: NeedsGiganticBobber - player doesn't have toy")
         return false
     end
 
     -- Check if toy is on cooldown
     local cooldown = Catfish.API:GetToyCooldown(GIGANTIC_BOBBER_TOY_ID)
     if cooldown > 0 then
+        Catfish:Debug("OneKey: NeedsGiganticBobber - toy on cooldown:", cooldown)
         return false
     end
 
+    Catfish:Debug("OneKey: NeedsGiganticBobber - returning true")
     return true
 end
 
@@ -164,15 +183,26 @@ local BLOCKED_KEYS = {
 
 -- Update binding based on current state
 function OneKey:UpdateBinding()
+    Catfish:Debug("OneKey: UpdateBinding called")
+
     -- Cannot update bindings during combat lockdown
     if InCombatLockdown() then
+        Catfish:Debug("OneKey: UpdateBinding skipped - in combat lockdown")
         return
     end
 
-    if not self.autoButton or not self.autoButton:IsVisible() then
+    if not self.autoButton then
+        Catfish:Debug("OneKey: UpdateBinding skipped - no autoButton")
         return
     end
+
+    if not self.autoButton:IsVisible() then
+        Catfish:Debug("OneKey: UpdateBinding skipped - button not visible")
+        return
+    end
+
     if not self.keybind then
+        Catfish:Debug("OneKey: UpdateBinding skipped - no keybind set")
         return
     end
 
@@ -181,6 +211,7 @@ function OneKey:UpdateBinding()
 
     -- Skip binding if swimming (let key retain original function)
     if IsSwimming() then
+        Catfish:Debug("OneKey: UpdateBinding skipped - player swimming")
         return
     end
 
@@ -193,10 +224,12 @@ function OneKey:UpdateBinding()
     if softTarget or hasFishingBuff or isFishing or state == Catfish.Core.State.WAITING then
         -- Bind to INTERACTTARGET for reeling in
         SetOverrideBinding(self.autoButton, true, normalizedKey, "INTERACTTARGET")
+        Catfish:Debug("OneKey: Bound to INTERACTTARGET (softTarget:", softTarget ~= nil, "hasBuff:", hasFishingBuff, "isFishing:", isFishing, "state:", state, ")")
     else
         -- Check if we're in cooldown after reeling (to prevent accidental cast after loot)
         local timeSinceReel = GetTime() - self.lastReelTime
         if timeSinceReel < self.reelCooldown then
+            Catfish:Debug("OneKey: UpdateBinding skipped - in reel cooldown")
             return
         end
 
@@ -204,17 +237,29 @@ function OneKey:UpdateBinding()
         if NeedsGiganticBobber() then
             -- Set up the toy button with macro (like Angleur does)
             local toyName = GetGiganticBobberName()
-            if toyName then
+            if toyName and toyName ~= "" then
                 Catfish.API:SetToyButtonMacro(toyName)
                 -- Bind to click the toy button
                 SetOverrideBindingClick(self.autoButton, true, normalizedKey, "CatfishToyButton")
-                Catfish:Debug("OneKey: Binding to Gigantic Bobber toy button:", toyName)
+                Catfish:Debug("OneKey: Bound to Gigantic Bobber toy button:", toyName)
+            else
+                -- Toy name not available yet, fall back to fishing spell
+                -- Will retry on next keybind update
+                Catfish:Debug("OneKey: Toy name not available, falling back to fishing spell")
+                local spellName = GetFishingSpellName()
+                if spellName then
+                    SetOverrideBindingSpell(self.autoButton, true, normalizedKey, spellName)
+                    Catfish:Debug("OneKey: Bound to fishing spell (fallback):", spellName)
+                end
             end
         else
             -- Bind to fishing spell directly
             local spellName = GetFishingSpellName()
             if spellName then
                 SetOverrideBindingSpell(self.autoButton, true, normalizedKey, spellName)
+                Catfish:Debug("OneKey: Bound to fishing spell:", spellName)
+            else
+                Catfish:Debug("OneKey: Failed to get fishing spell name for binding")
             end
         end
     end
@@ -312,6 +357,29 @@ function OneKey:OnStateChanged()
 end
 
 -- ============================================
+-- Toy Usage Callback (called from Events when toy is used)
+-- ============================================
+
+function OneKey:OnToyUsed(toyID)
+    Catfish:Debug("OneKey: OnToyUsed called with toyID:", toyID)
+
+    -- Only handle Gigantic Bobber toy
+    if toyID ~= GIGANTIC_BOBBER_TOY_ID then
+        return
+    end
+
+    -- Delay update to allow buff to fully apply
+    C_Timer.After(0.5, function()
+        if not InCombatLockdown() then
+            Catfish:Debug("OneKey: Updating binding after toy usage")
+            self:UpdateBinding()
+        else
+            Catfish:Debug("OneKey: In combat, skipping binding update")
+        end
+    end)
+end
+
+-- ============================================
 -- Initialization
 -- ============================================
 
@@ -327,8 +395,8 @@ function OneKey:Init()
         self.keybind = CatfishCharDB.keybinding
     end
 
-    -- Show button if one-key mode is enabled
-    if Catfish.db.oneKeyEnabled then
+    -- Show button if one-key mode is enabled and not in sleep mode
+    if Catfish.db.oneKeyEnabled and not Catfish.db.sleepMode then
         self.autoButton:Show()
     end
 end

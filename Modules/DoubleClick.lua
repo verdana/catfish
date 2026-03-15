@@ -56,10 +56,14 @@ local GIGANTIC_BOBBER_TOY_ID = 202207
 local GIGANTIC_BOBBER_NAME = nil  -- Will be cached on first use
 
 local function GetGiganticBobberName()
-    if not GIGANTIC_BOBBER_NAME then
-        GIGANTIC_BOBBER_NAME = Catfish.API:GetItemName(GIGANTIC_BOBBER_TOY_ID)
+    if GIGANTIC_BOBBER_NAME then
+        return GIGANTIC_BOBBER_NAME
     end
-    return GIGANTIC_BOBBER_NAME
+    local name = Catfish.API:GetItemName(GIGANTIC_BOBBER_TOY_ID)
+    if name then
+        GIGANTIC_BOBBER_NAME = name  -- 只缓存有效名称
+    end
+    return name
 end
 
 local function NeedsGiganticBobber()
@@ -109,12 +113,16 @@ local function SetFishingBinding()
         if NeedsGiganticBobber() then
             -- Set up the toy button with macro (like Angleur does)
             local toyName = GetGiganticBobberName()
-            if toyName then
+            if toyName and toyName ~= "" then
                 Catfish.API:SetToyButtonMacro(toyName)
                 -- Bind to click the toy button
                 local success = SetOverrideBindingClick(DoubleClick.bindingFrame, true, DoubleClick.bindKey, "CatfishToyButton")
                 Catfish:Debug("SetOverrideBindingClick:", DoubleClick.bindKey, "-> CatfishToyButton, toyName:", toyName, "success:", tostring(success))
                 return success
+            else
+                -- Toy name not available yet, fall back to fishing spell
+                -- Will retry on next keybind update
+                Catfish:Debug("DoubleClick: Toy name not available, falling back to fishing spell")
             end
         end
 
