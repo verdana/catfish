@@ -398,6 +398,16 @@ local function CreateMainPanel()
         end
     )
 
+    -- Auto Loot (uses WoW CVAR, not saved in addon DB)
+    CreateCheckbox(
+        "保持自动拾取",
+        Catfish.db.keepAutoLoot,
+        "每次抛竿时自动检查并开启自动拾取功能",
+        function(checked)
+            Catfish.db.keepAutoLoot = checked
+        end
+    )
+
     -- Debug Mode
     CreateCheckbox(
         "启用调试模式",
