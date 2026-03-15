@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "WebSearch",
-      "Bash(omc skill:*)",
-      "Bash(omc install:*)"
-    ]
-  }
-}
