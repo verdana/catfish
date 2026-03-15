@@ -256,16 +256,26 @@ end
 -- Inventory Events
 -- ============================================
 
-function Events.BAG_UPDATE(bagID)
-    -- Equipment module may need to rescan
-    if Catfish.Modules.Equipment then
-        Catfish.Modules.Equipment:OnBagUpdate(bagID)
-    end
+local bagUpdateTimer = nil
 
-    -- Lure manager may need to rescan
-    if Catfish.Modules.LureManager then
-        Catfish.Modules.LureManager:OnBagUpdate(bagID)
+function Events.BAG_UPDATE(bagID)
+    -- Debounce: delay execution to merge multiple BAG_UPDATE events
+    -- WoW fires BAG_UPDATE multiple times in quick succession (one per bag)
+    if bagUpdateTimer then
+        bagUpdateTimer:Cancel()
     end
+    bagUpdateTimer = C_Timer.NewTimer(0.1, function()
+        bagUpdateTimer = nil
+        -- Equipment module may need to rescan
+        if Catfish.Modules.Equipment then
+            Catfish.Modules.Equipment:OnBagUpdate(bagID)
+        end
+
+        -- Lure manager may need to rescan
+        if Catfish.Modules.LureManager then
+            Catfish.Modules.LureManager:OnBagUpdate(bagID)
+        end
+    end)
 end
 
 function Events.UNIT_INVENTORY_CHANGED(unit)
