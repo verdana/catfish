@@ -247,7 +247,6 @@ function Options:BuildSettings(cat)
                 Catfish.Modules.OneKey:SetEnabled(value)
             end
         end,
-        notify = true,
     })
 
     -- Keybind button - use CreateButton with current keybind text
@@ -280,7 +279,6 @@ function Options:BuildSettings(cat)
                 Catfish.Modules.DoubleClick:SetEnabled(value)
             end
         end,
-        notify = true,
     })
 
     -- ============================================

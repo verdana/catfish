@@ -17,9 +17,6 @@ libs\LibEQOL\LibEQOLSettingsTemplates.xml
 libs\LibEQOL\LibEQOLSettingsMode.lua
 libs\LibEQOL\LibEQOLSettingsScrollDropdown.lua
 
-# 绑定
-Bindings.xml
-
 # 核心文件
 init.lua
 Core\API.lua
