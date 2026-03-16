@@ -322,11 +322,13 @@ function Options:BuildSettings(cat)
         key = "selectedBobberToy",
         name = "选择浮标",
         desc = "选择要使用的浮标玩具",
-        default = db.selectedBobberToy,
-        get = function() return db.selectedBobberToy end,
-        set = function(_, value) db.selectedBobberToy = value end,
+        default = db.selectedBobberToy or "",
+        get = function() return db.selectedBobberToy or "" end,
+        set = function(_, value)
+            db.selectedBobberToy = (value ~= "" and value) or nil
+        end,
         optionfunc = function()
-            local options = {}
+            local options = { [""] = "无" }
             local ownedBobbers = Catfish.Modules.Toys and Catfish.Modules.Toys:GetOwnedBobbers() or {}
             for _, toy in ipairs(ownedBobbers) do
                 options[toy.toyID] = toy.name
