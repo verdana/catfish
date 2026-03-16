@@ -223,6 +223,11 @@ function Core:StartFishing()
         end
     end
 
+    -- Use Bobber Toy if enabled (changes bobber appearance)
+    if Catfish.db.useBobberToy and Catfish.db.selectedBobberToy then
+        self:UseBobberToy()
+    end
+
     -- Start session if not active
     if not self.sessionActive then
         self.sessionActive = true
@@ -289,6 +294,31 @@ function Core:UseGiganticBobber()
     local result = Catfish.API:UseToy(GIGANTIC_BOBBER_TOY_ID)
     Catfish:Print("UseToy result:", result and "SUCCESS" or "FAILED")
     return result
+end
+
+function Core:UseBobberToy()
+    local toyID = Catfish.db.selectedBobberToy
+    if not toyID then
+        Catfish:Debug("No bobber toy selected")
+        return false
+    end
+
+    -- Check if player has the toy
+    if not Catfish.API:PlayerHasToy(toyID) then
+        Catfish:Debug("Player does not have bobber toy:", toyID)
+        return false
+    end
+
+    -- Check if toy is on cooldown
+    local cooldown = Catfish.API:GetToyCooldown(toyID)
+    if cooldown > 0 then
+        Catfish:Debug("Bobber toy on cooldown:", cooldown, "seconds")
+        return false
+    end
+
+    -- Use the toy
+    Catfish:Debug("Using bobber toy:", toyID)
+    return Catfish.API:UseToy(toyID)
 end
 
 function Core:CancelFishing()

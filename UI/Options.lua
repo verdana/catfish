@@ -1,20 +1,19 @@
 -- Catfish - Options.lua
--- Integration with WoW Settings Panel (ESC -> Options -> AddOns)
+-- Settings panel using WoW native Settings API
 
 local ADDON_NAME, Catfish = ...
 
 local Options = {}
 Catfish.UI.Options = Options
 
--- Category reference
 Options.category = nil
-Options.generalCategory = nil
+Options.panel = nil
 
 -- ============================================
 -- Keybinding Button Widget
 -- ============================================
 
-local function CreateKeybindingButton(parent, onSet)
+local function CreateKeybindingButton(parent, onSet, onGet)
     local button = CreateFrame("Button", nil, parent)
     button:SetSize(180, 24)
 
@@ -46,12 +45,6 @@ local function CreateKeybindingButton(parent, onSet)
     button.waitingForKey = false
     button.currentKey = nil
 
-    -- Highlight background for capture mode
-    local captureBg = button:CreateTexture(nil, "BACKGROUND")
-    captureBg:SetColorTexture(1, 1, 0, 0)
-    captureBg:SetAllPoints()
-    button.captureBg = captureBg
-
     -- Message frame for capture mode
     local msgFrame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
     msgFrame:SetSize(400, 30)
@@ -80,7 +73,6 @@ local function CreateKeybindingButton(parent, onSet)
             self.text:SetTextColor(1, 1, 1)
         else
             self.text:SetText(NOT_BOUND)
-            -- self.text:SetTextColor(0.5, 0.5, 0.5)
         end
     end
 
@@ -90,7 +82,6 @@ local function CreateKeybindingButton(parent, onSet)
 
     function button:StartCapture()
         self.waitingForKey = true
-        -- self.captureBg:SetColorTexture(1, 1, 0, 0.3)
         self:EnableKeyboard(true)
         self:SetPropagateKeyboardInput(false)
         self.msgFrame:Show()
@@ -99,10 +90,15 @@ local function CreateKeybindingButton(parent, onSet)
 
     function button:StopCapture()
         self.waitingForKey = false
-        -- self.captureBg:SetColorTexture(1, 1, 0, 0)
         self:EnableKeyboard(false)
         self.msgFrame:Hide()
         self:UnlockHighlight()
+    end
+
+    function button:UpdateDisplay()
+        if onGet then
+            self:SetKey(onGet())
+        end
     end
 
     button:SetScript("OnClick", function(self)
@@ -168,209 +164,212 @@ local function CreateKeybindingButton(parent, onSet)
 end
 
 -- ============================================
--- Panel Header Helper (标题栏 + 分割线)
+-- Create Checkbox Helper
 -- ============================================
 
-local function CreatePanelHeader(panel, title, onReset)
-    -- 标题文字（左侧）
-    local titleText = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-    titleText:SetPoint("TOPLEFT", 16, -16)
-    titleText:SetText(title)
+local function CreateCheckbox(parent, label, initialValue, tooltip, callback)
+    local check = CreateFrame("CheckButton", nil, parent)
+    check:SetSize(24, 24)
+    check:SetChecked(initialValue)
 
-    -- 重置按钮（右侧）
-    if onReset then
-        local resetBtn = CreateFrame("Button", nil, panel, "EditModeSystemSettingsDialogButtonTemplate")
-        resetBtn:SetPoint("TOPRIGHT", -16, -10)
-        resetBtn:SetText("默认")
-        resetBtn:SetSize(60, 22)
-        resetBtn:SetOnClickHandler(onReset)
+    -- Textures
+    local normalTexture = check:CreateTexture()
+    normalTexture:SetTexture("Interface\\Buttons\\UI-CheckBox-Up")
+    normalTexture:SetSize(24, 24)
+    normalTexture:SetPoint("CENTER")
+    check:SetNormalTexture(normalTexture)
+
+    local highlightTexture = check:CreateTexture()
+    highlightTexture:SetTexture("Interface\\Buttons\\UI-CheckBox-Highlight")
+    highlightTexture:SetSize(24, 24)
+    highlightTexture:SetPoint("CENTER")
+    check:SetHighlightTexture(highlightTexture)
+
+    local checkedTexture = check:CreateTexture()
+    checkedTexture:SetTexture("Interface\\Buttons\\UI-CheckBox-Check")
+    checkedTexture:SetSize(24, 24)
+    checkedTexture:SetPoint("CENTER")
+    check:SetCheckedTexture(checkedTexture)
+
+    local pushedTexture = check:CreateTexture()
+    pushedTexture:SetTexture("Interface\\Buttons\\UI-CheckBox-Down")
+    pushedTexture:SetSize(24, 24)
+    pushedTexture:SetPoint("CENTER")
+    check:SetPushedTexture(pushedTexture)
+
+    -- Label
+    check.text = check:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    check.text:SetPoint("LEFT", check, "RIGHT", 4, 0)
+    check.text:SetText(label)
+
+    if tooltip then
+        check:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetText(tooltip, nil, nil, nil, nil, true)
+            GameTooltip:Show()
+        end)
+        check:SetScript("OnLeave", GameTooltip_Hide)
     end
 
-    -- 白色渐变分割线
+    check:SetScript("OnClick", function(self)
+        local checked = self:GetChecked()
+        if callback then callback(checked) end
+    end)
+
+    return check
+end
+
+-- ============================================
+-- Create Dropdown Helper
+-- ============================================
+
+local function CreateDropdownButton(parent, label, options, currentValue, callback)
+    local button = CreateFrame("Button", nil, parent, "EditModeSystemSettingsDialogButtonTemplate")
+    button:SetSize(160, 24)
+
+    button.text = button:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    button.text:SetPoint("CENTER")
+
+    local function UpdateText()
+        for k, v in pairs(options) do
+            if k == currentValue then
+                button.text:SetText(v)
+                return
+            end
+        end
+        button.text:SetText(label or "选择...")
+    end
+
+    button:SetOnClickHandler(function()
+        local function InitDropdown(_, level)
+            local info = UIDropDownMenu_CreateInfo()
+            info.func = function(_, key)
+                currentValue = key
+                UpdateText()
+                if callback then callback(key) end
+            end
+
+            for key, value in pairs(options) do
+                info.text = value
+                info.arg1 = key
+                info.checked = (currentValue == key)
+                UIDropDownMenu_AddButton(info)
+            end
+        end
+
+        local menu = CreateFrame("Frame", nil, UIParent, "UIDropDownMenuTemplate")
+        UIDropDownMenu_Initialize(menu, InitDropdown, "MENU")
+        ToggleDropDownMenu(1, nil, menu, button, 0, 0)
+    end)
+
+    UpdateText()
+
+    return button
+end
+
+-- ============================================
+-- Initialize Settings
+-- ============================================
+
+function Options:Init()
+    if self.category then return end
+
+    -- Create main panel
+    local panel = CreateFrame("Frame", "CatfishOptionsPanel")
+    panel.name = "Catfish"
+    self.panel = panel
+
+    -- Title
+    local title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    title:SetPoint("TOPLEFT", 16, -16)
+    title:SetText("Catfish - " .. (Catfish.version or "1.0.0"))
+
+    -- Divider
     local divider = panel:CreateTexture(nil, "ARTWORK")
     divider:SetHeight(16)
     divider:SetPoint("TOPLEFT", 16, -40)
     divider:SetPoint("TOPRIGHT", -16, -40)
     divider:SetTexture([[Interface\FriendsFrame\UI-FriendsFrame-OnlineDivider]])
 
-    return titleText, divider
+    -- Build settings
+    self:BuildSettings(panel)
+
+    -- Register with Settings API
+    local category = Settings.RegisterCanvasLayoutCategory(panel, "Catfish")
+    self.category = category
+    Settings.RegisterAddOnCategory(category)
+
+    Catfish:Debug("Options panel registered")
 end
 
 -- ============================================
--- About Panel (Default view)
+-- Build Settings
 -- ============================================
 
-local function CreateAboutPanel()
-    local panel = CreateFrame("Frame", "CatfishAboutPanel")
-    panel.name = "Catfish"
+function Options:BuildSettings(panel)
+    local db = Catfish.db
+    local offsetY = -56
+    local rowHeight = 32
 
-    -- 标题栏 + 分割线
-    CreatePanelHeader(panel, "鲶鱼 - 钓鱼助手")
-
-    -- Icon (从分割线下方开始)
-    local icon = panel:CreateTexture(nil, "ARTWORK")
-    icon:SetSize(64, 64)
-    icon:SetTexture("Interface\\Icons\\INV_Misc_Fish_52")
-    icon:SetPoint("TOPLEFT", 16, -60)
-
-    -- Version info
-    local version = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    version:SetPoint("TOPLEFT", icon, "TOPRIGHT", 16, 0)
-    version:SetText("版本: " .. (Catfish.version or "1.0.0"))
-
-    local author = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    author:SetPoint("TOPLEFT", version, "BOTTOMLEFT", 0, -4)
-    author:SetText("作者: Verdana")
-
-    -- Description
-    local desc = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    desc:SetPoint("TOPLEFT", author, "BOTTOMLEFT", 0, -16)
-    desc:SetWidth(400)
-    desc:SetJustifyH("LEFT")
-    desc:SetText("功能丰富的钓鱼助手，支持：\n• 一键钓鱼 / 双击钓鱼模式\n• 自动装备钓具\n• 自动使用鱼饵和玩具\n• 钓鱼统计")
-
-    -- Required methods for Settings API
-    function panel:OnCommit() end
-    function panel:OnDefault() end
-    function panel:OnRefresh() end
-
-    return panel
-end
-
--- ============================================
--- Main Settings Panel (综合)
--- ============================================
-
-local function CreateMainPanel()
-    local panel = CreateFrame("Frame", "CatfishMainPanel")
-    panel.name = "综合"
-    panel:Hide()
-
-    -- 标题栏 + 分割线 + 默认按钮
-    CreatePanelHeader(panel, "综合", function()
-        -- 重置综合为默认值
-        Catfish.db.oneKeyEnabled = false
-        Catfish.db.doubleClickEnabled = false
-        Catfish.charDB.minimap.hide = false
-    end)
-
-    -- 内容区从分割线下方开始
-    local offsetY = -40
-    local checkboxHeight = 24
-    local function GetNextOffset()
-        offsetY = offsetY - checkboxHeight - 8
+    local function NextY()
+        offsetY = offsetY - rowHeight
         return offsetY
     end
 
-    -- Create checkbox helper
-    local function CreateCheckbox(label, initialValue, tooltip, callback)
-        local check = CreateFrame("CheckButton", nil, panel)
-        check:SetSize(24, 24)
-        check:SetPoint("TOPLEFT", 16, GetNextOffset())
-        check:SetChecked(initialValue)
+    -- ============================================
+    -- 钓鱼模式 Section
+    -- ============================================
+    local sectionTitle = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    sectionTitle:SetPoint("TOPLEFT", 16, NextY())
+    sectionTitle:SetText("|cFFFFD100钓鱼模式|r")
 
-        -- Create checkbox textures
-        local normalTexture = check:CreateTexture()
-        normalTexture:SetTexture("Interface\\Buttons\\UI-CheckBox-Up")
-        normalTexture:SetSize(24, 24)
-        normalTexture:SetPoint("CENTER")
-        check:SetNormalTexture(normalTexture)
-
-        local highlightTexture = check:CreateTexture()
-        highlightTexture:SetTexture("Interface\\Buttons\\UI-CheckBox-Highlight")
-        highlightTexture:SetSize(24, 24)
-        highlightTexture:SetPoint("CENTER")
-        check:SetHighlightTexture(highlightTexture)
-
-        local checkedTexture = check:CreateTexture()
-        checkedTexture:SetTexture("Interface\\Buttons\\UI-CheckBox-Check")
-        checkedTexture:SetSize(24, 24)
-        checkedTexture:SetPoint("CENTER")
-        check:SetCheckedTexture(checkedTexture)
-
-        local pushedTexture = check:CreateTexture()
-        pushedTexture:SetTexture("Interface\\Buttons\\UI-CheckBox-Down")
-        pushedTexture:SetSize(24, 24)
-        pushedTexture:SetPoint("CENTER")
-        check:SetPushedTexture(pushedTexture)
-
-        -- Create text label
-        check.text = check:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-        check.text:SetPoint("LEFT", check, "RIGHT", 4, 0)
-        check.text:SetText(label)
-
-        if tooltip then
-            check.tooltip = tooltip
-        end
-
-        check:SetScript("OnClick", function(self)
-            local checked = self:GetChecked()
-            if callback then callback(checked) end
-        end)
-
-        return check
-    end
-
-    -- One-Key Mode (declare variable first for forward reference)
-    local oneKeyCheck
+    -- One-Key Mode (forward declare doubleClickCheck for mutual exclusion)
     local doubleClickCheck
-
-    oneKeyCheck = CreateCheckbox(
-        "启用一键钓鱼",
-        Catfish.db.oneKeyEnabled,
+    local oneKeyCheck = CreateCheckbox(panel, "启用一键钓鱼", db.oneKeyEnabled,
         "按下一个键完成钓鱼动作",
         function(checked)
-            Catfish.db.oneKeyEnabled = checked
+            db.oneKeyEnabled = checked
             if checked then
-                Catfish.db.doubleClickEnabled = false
-                if doubleClickCheck then
-                    doubleClickCheck:SetChecked(false)
-                end
-                -- Disable DoubleClick module's runtime state
+                -- Mutually exclusive with double-click
+                db.doubleClickEnabled = false
+                if doubleClickCheck then doubleClickCheck:SetChecked(false) end
                 if Catfish.Modules.DoubleClick then
                     Catfish.Modules.DoubleClick:SetEnabled(false)
                 end
             end
-            -- Update OneKey module's binding state
             if Catfish.Modules.OneKey then
                 Catfish.Modules.OneKey:SetEnabled(checked)
             end
-        end
-    )
+        end)
+    oneKeyCheck:SetPoint("TOPLEFT", 16, NextY())
 
-    -- Keybinding button (shown when one-key mode is enabled)
-    local keybindLabel = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    keybindLabel:SetPoint("TOPLEFT", oneKeyCheck, "BOTTOMLEFT", 24, -4)
-    keybindLabel:SetText("快捷键")
-
-    local keybindBtn = CreateKeybindingButton(panel, function(key)
-        if Catfish.Modules.OneKey then
-            return Catfish.Modules.OneKey:SetKeybind(key)
-        end
-        return false
-    end)
-    keybindBtn:SetPoint("LEFT", keybindLabel, "RIGHT", 8, 0)
-
-    -- Set initial keybind display
-    if Catfish.Modules.OneKey then
-        keybindBtn:SetKey(Catfish.Modules.OneKey:GetKeybind())
-    end
-
-    offsetY = -20 - (checkboxHeight + 8) * 3  -- Account for checkboxes and keybind row
+    -- Keybind button
+    local keybindBtn = CreateKeybindingButton(panel,
+        function(key)
+            if Catfish.Modules.OneKey then
+                return Catfish.Modules.OneKey:SetKeybind(key)
+            end
+            return false
+        end,
+        function()
+            if Catfish.Modules.OneKey then
+                return Catfish.Modules.OneKey:GetKeybind()
+            end
+            return nil
+        end)
+    keybindBtn:SetPoint("LEFT", oneKeyCheck.text, "RIGHT", 150, 0)
+    keybindBtn:UpdateDisplay()
+    self.keybindButton = keybindBtn
 
     -- Double-Click Mode
-    doubleClickCheck = CreateCheckbox(
-        "启用双击钓鱼",
-        Catfish.db.doubleClickEnabled,
+    doubleClickCheck = CreateCheckbox(panel, "启用双击钓鱼", db.doubleClickEnabled,
         "快速双击鼠标右键开始钓鱼",
         function(checked)
-            Catfish.db.doubleClickEnabled = checked
+            db.doubleClickEnabled = checked
             if checked then
-                Catfish.db.oneKeyEnabled = false
-                if oneKeyCheck then
-                    oneKeyCheck:SetChecked(false)
-                end
-                -- Disable OneKey module's binding
+                -- Mutually exclusive with one-key
+                db.oneKeyEnabled = false
+                if oneKeyCheck then oneKeyCheck:SetChecked(false) end
                 if Catfish.Modules.OneKey then
                     Catfish.Modules.OneKey:SetEnabled(false)
                 end
@@ -378,13 +377,63 @@ local function CreateMainPanel()
             if Catfish.Modules.DoubleClick then
                 Catfish.Modules.DoubleClick:SetEnabled(checked)
             end
+        end)
+    doubleClickCheck:SetPoint("TOPLEFT", 16, NextY())
+
+    -- ============================================
+    -- 玩具设置 Section
+    -- ============================================
+    local sectionTitle2 = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    sectionTitle2:SetPoint("TOPLEFT", 16, NextY() - 8)
+    sectionTitle2:SetText("|cFFFFD100玩具设置|r")
+
+    -- Auto Use Toys
+    local autoToysCheck = CreateCheckbox(panel, "自动使用玩具", db.autoToys,
+        "钓鱼时自动使用配置的木筏、鱼漂等玩具",
+        function(checked) db.autoToys = checked end)
+    autoToysCheck:SetPoint("TOPLEFT", 16, NextY())
+
+    -- Use Gigantic Bobber
+    local giganticBobberCheck = CreateCheckbox(panel, "使用巨型鱼漂", db.useGiganticBobber,
+        "每次抛竿前自动使用\"可重复使用的巨型鱼漂\"玩具，放大鱼漂便于观察",
+        function(checked) db.useGiganticBobber = checked end)
+    giganticBobberCheck:SetPoint("TOPLEFT", 16, NextY())
+
+    -- Use Bobber Toy
+    local useBobberToyCheck = CreateCheckbox(panel, "使用浮标", db.useBobberToy,
+        "每次抛竿前自动使用选择的浮标玩具改变鱼漂外观",
+        function(checked) db.useBobberToy = checked end)
+    useBobberToyCheck:SetPoint("TOPLEFT", 16, NextY())
+
+    -- Bobber Toy Dropdown Button (on next line)
+    local function getBobberOptions()
+        local options = {}
+        local ownedBobbers = Catfish.Modules.Toys and Catfish.Modules.Toys:GetOwnedBobbers() or {}
+        for _, toy in ipairs(ownedBobbers) do
+            options[toy.toyID] = toy.name
         end
-    )
+        return options
+    end
+
+    local bobberDropdown = CreateDropdownButton(panel, "选择浮标...", getBobberOptions(), db.selectedBobberToy,
+        function(value) db.selectedBobberToy = value end)
+    bobberDropdown:SetPoint("TOPLEFT", 40, NextY())
+
+    -- ============================================
+    -- 其它设置 Section
+    -- ============================================
+    local sectionTitle3 = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    sectionTitle3:SetPoint("TOPLEFT", 16, NextY() - 8)
+    sectionTitle3:SetText("|cFFFFD100其它设置|r")
+
+    -- Keep Auto Loot
+    local autoLootCheck = CreateCheckbox(panel, "保持自动拾取", db.keepAutoLoot,
+        "每次抛竿时自动检查并开启自动拾取功能",
+        function(checked) db.keepAutoLoot = checked end)
+    autoLootCheck:SetPoint("TOPLEFT", 16, NextY())
 
     -- Hide Minimap Button
-    local hideMinimapCheck = CreateCheckbox(
-        "隐藏小地图按钮",
-        Catfish.charDB.minimap.hide,
+    local hideMinimapCheck = CreateCheckbox(panel, "隐藏小地图按钮", Catfish.charDB.minimap.hide,
         "隐藏小地图上的插件按钮",
         function(checked)
             Catfish.charDB.minimap.hide = checked
@@ -395,177 +444,30 @@ local function CreateMainPanel()
                     Catfish.UI.MinimapButton:Show()
                 end
             end
-        end
-    )
-
-    -- Auto Loot (uses WoW CVAR, not saved in addon DB)
-    CreateCheckbox(
-        "保持自动拾取",
-        Catfish.db.keepAutoLoot,
-        "每次抛竿时自动检查并开启自动拾取功能",
-        function(checked)
-            Catfish.db.keepAutoLoot = checked
-        end
-    )
+        end)
+    hideMinimapCheck:SetPoint("TOPLEFT", 16, NextY())
 
     -- Debug Mode
-    CreateCheckbox(
-        "启用调试模式",
-        Catfish.db.debugMode,
+    local debugCheck = CreateCheckbox(panel, "启用调试模式", db.debugMode,
         "在聊天框输出详细的调试信息，用于排查问题",
-        function(checked)
-            Catfish.db.debugMode = checked
-        end
-    )
+        function(checked) db.debugMode = checked end)
+    debugCheck:SetPoint("TOPLEFT", 16, NextY())
 
     -- Required methods for Settings API
     function panel:OnCommit() end
     function panel:OnDefault() end
     function panel:OnRefresh() end
-
-    return panel
 end
 
 -- ============================================
--- Other Settings Panel (其它)
+-- Open Settings
 -- ============================================
-
-local function CreateOtherPanel()
-    local panel = CreateFrame("Frame", "CatfishOtherPanel")
-    panel.name = "其它"
-    panel:Hide()
-
-    -- 标题栏 + 分割线 + 默认按钮
-    CreatePanelHeader(panel, "其它", function()
-        -- 重置为默认值
-        Catfish.db.useGiganticBobber = false
-        Catfish.db.autoToys = true
-    end)
-
-    -- 内容区从分割线下方开始
-    local offsetY = -40
-    local checkboxHeight = 24
-    local function GetNextOffset()
-        offsetY = offsetY - checkboxHeight - 8
-        return offsetY
-    end
-
-    -- Create checkbox helper
-    local function CreateCheckbox(label, initialValue, tooltip, callback)
-        local check = CreateFrame("CheckButton", nil, panel)
-        check:SetSize(24, 24)
-        check:SetPoint("TOPLEFT", 16, GetNextOffset())
-        check:SetChecked(initialValue)
-
-        -- Create checkbox textures
-        local normalTexture = check:CreateTexture()
-        normalTexture:SetTexture("Interface\\Buttons\\UI-CheckBox-Up")
-        normalTexture:SetSize(24, 24)
-        normalTexture:SetPoint("CENTER")
-        check:SetNormalTexture(normalTexture)
-
-        local highlightTexture = check:CreateTexture()
-        highlightTexture:SetTexture("Interface\\Buttons\\UI-CheckBox-Highlight")
-        highlightTexture:SetSize(24, 24)
-        highlightTexture:SetPoint("CENTER")
-        check:SetHighlightTexture(highlightTexture)
-
-        local checkedTexture = check:CreateTexture()
-        checkedTexture:SetTexture("Interface\\Buttons\\UI-CheckBox-Check")
-        checkedTexture:SetSize(24, 24)
-        checkedTexture:SetPoint("CENTER")
-        check:SetCheckedTexture(checkedTexture)
-
-        local pushedTexture = check:CreateTexture()
-        pushedTexture:SetTexture("Interface\\Buttons\\UI-CheckBox-Down")
-        pushedTexture:SetSize(24, 24)
-        pushedTexture:SetPoint("CENTER")
-        check:SetPushedTexture(pushedTexture)
-
-        -- Create text label
-        check.text = check:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-        check.text:SetPoint("LEFT", check, "RIGHT", 4, 0)
-        check.text:SetText(label)
-
-        if tooltip then
-            check.tooltip = tooltip
-        end
-
-        check:SetScript("OnClick", function(self)
-            local checked = self:GetChecked()
-            if callback then callback(checked) end
-        end)
-
-        return check
-    end
-
-    -- Auto Use Toys
-    CreateCheckbox(
-        "自动使用玩具",
-        Catfish.db.autoToys,
-        "钓鱼时自动使用配置的木筏、鱼漂等玩具",
-        function(checked)
-            Catfish.db.autoToys = checked
-        end
-    )
-
-    -- Use Gigantic Bobber
-    CreateCheckbox(
-        "使用巨型鱼漂",
-        Catfish.db.useGiganticBobber,
-        "每次抛竿前自动使用\"可重复使用的巨型鱼漂\"玩具",
-        function(checked)
-            Catfish.db.useGiganticBobber = checked
-        end
-    )
-
-    -- Required methods for Settings API
-    function panel:OnCommit() end
-    function panel:OnDefault() end
-    function panel:OnRefresh() end
-
-    return panel
-end
-
--- ============================================
--- Initialize Settings
--- ============================================
-
-function Options:Init()
-    if self.category then return end
-
-    -- Create about panel (main category)
-    local aboutPanel = CreateAboutPanel()
-
-    -- Register main category with Blizzard Settings
-    local category, layout = Settings.RegisterCanvasLayoutCategory(aboutPanel, "Catfish")
-    -- In WoW 12.0+, category.ID is automatically assigned as a number - do NOT override it
-    self.category = category
-    Settings.RegisterAddOnCategory(category)
-
-    -- Create main settings panel (subcategory: 综合)
-    local mainPanel = CreateMainPanel()
-    mainPanel.name = "综合"
-    mainPanel.parent = "Catfish"
-    local mainSubcategory = Settings.RegisterCanvasLayoutSubcategory(category, mainPanel, "综合")
-    self.mainCategory = mainSubcategory
-
-    -- Create other settings panel (subcategory: 其它)
-    local otherPanel = CreateOtherPanel()
-    otherPanel.name = "其它"
-    otherPanel.parent = "Catfish"
-    local otherSubcategory = Settings.RegisterCanvasLayoutSubcategory(category, otherPanel, "其它")
-    self.otherCategory = otherSubcategory
-
-    Catfish:Debug("Options panel registered with Blizzard Settings, category ID:", category.ID)
-end
 
 function Options:Open()
     if not self.category then
         self:Init()
     end
     if self.category then
-        -- Use the numeric category.ID directly (auto-assigned by WoW 12.0+)
         Settings.OpenToCategory(self.category.ID)
     end
 end

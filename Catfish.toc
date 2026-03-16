@@ -11,6 +11,10 @@
 ## Category-enUS: Professions
 ## Category-zhCN: 专业
 
+# 库文件
+libs\LibStub\LibStub.lua
+libs\LibEQOL\LibEQOLSettingsMode.lua
+
 # 核心文件
 init.lua
 Core\API.lua

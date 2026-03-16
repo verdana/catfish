@@ -343,13 +343,12 @@ function OneKey:OnStateChanged()
         self.lastReelTime = GetTime()
 
         -- Schedule binding update after cooldown
+        -- Using simpler approach: let UpdateBinding handle all condition checks
         C_Timer.After(self.reelCooldown, function()
-            if self.autoButton and self.autoButton:IsVisible() and self.keybind then
-                -- Only update if still in IDLE state
-                if Catfish.Core:GetState() == Catfish.Core.State.IDLE then
-                    self:UpdateBinding()
-                end
-            end
+            Catfish:Debug("OneKey: Scheduled binding update triggered")
+            -- Let UpdateBinding handle all condition checks internally
+            -- This is more reliable than duplicating checks here
+            self:UpdateBinding()
         end)
     end
 
