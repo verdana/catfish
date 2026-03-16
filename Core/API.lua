@@ -204,16 +204,16 @@ function API:GetToyButton()
     return toyButton
 end
 
-function API:SetToyButtonMacro(toyName)
-    Catfish:Debug("API:SetToyButtonMacro called with toyName:", tostring(toyName))
+function API:SetToyButtonMacro(macroText)
+    Catfish:Debug("API:SetToyButtonMacro called with macroText:", tostring(macroText))
 
     if InCombatLockdown() then
         Catfish:Debug("API:SetToyButtonMacro - In combat, returning false")
         return false
     end
 
-    if not toyName or toyName == "" then
-        Catfish:Debug("API:SetToyButtonMacro - Invalid toy name, returning false")
+    if not macroText or macroText == "" then
+        Catfish:Debug("API:SetToyButtonMacro - Invalid macro text, returning false")
         return false
     end
 
@@ -221,12 +221,23 @@ function API:SetToyButtonMacro(toyName)
         self:InitToyButton()
     end
 
+    -- Determine if this is a complete macro or just a toy name
+    -- If it starts with "/" or contains newlines, treat as complete macro
+    local finalMacro
+    if macroText:sub(1, 1) == "/" or macroText:find("\n") then
+        -- Complete macro text
+        finalMacro = macroText
+    else
+        -- Just a toy name, add /cast prefix
+        finalMacro = "/cast " .. macroText
+    end
+
     -- Set the macro text for the toy
     toyButton:SetAttribute("type", "macro")
-    toyButton:SetAttribute("macrotext", "/cast " .. toyName)
+    toyButton:SetAttribute("macrotext", finalMacro)
     toyButton:Show()
 
-    Catfish:Debug("API:SetToyButtonMacro - Button configured, macrotext:", "/cast " .. toyName)
+    Catfish:Debug("API:SetToyButtonMacro - Button configured, macrotext:", finalMacro)
     return true
 end
 

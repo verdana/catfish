@@ -234,9 +234,9 @@ function Options:BuildSettings(cat)
         key = "oneKeyEnabled",
         name = "启用一键钓鱼",
         desc = "按下一个键完成钓鱼动作",
-        default = db.oneKeyEnabled,
-        get = function() return db.oneKeyEnabled end,
-        set = function(_, value)
+        default = db.oneKeyEnabled or false,
+        get = function() return db.oneKeyEnabled or false end,
+        set = function(value)
             db.oneKeyEnabled = value
             if value then
                 -- Mutually exclusive with double-click
@@ -266,9 +266,9 @@ function Options:BuildSettings(cat)
         key = "doubleClickEnabled",
         name = "启用双击钓鱼",
         desc = "快速双击鼠标右键开始钓鱼",
-        default = db.doubleClickEnabled,
-        get = function() return db.doubleClickEnabled end,
-        set = function(_, value)
+        default = db.doubleClickEnabled or false,
+        get = function() return db.doubleClickEnabled or false end,
+        set = function(value)
             db.doubleClickEnabled = value
             if value then
                 -- Mutually exclusive with one-key
@@ -292,9 +292,9 @@ function Options:BuildSettings(cat)
         key = "autoToys",
         name = "自动使用玩具",
         desc = "钓鱼时自动使用配置的木筏、鱼漂等玩具",
-        default = db.autoToys,
-        get = function() return db.autoToys end,
-        set = function(_, value) db.autoToys = value end,
+        default = db.autoToys or false,
+        get = function() return db.autoToys or false end,
+        set = function(value) db.autoToys = value end,
     })
 
     -- Use Gigantic Bobber
@@ -302,36 +302,35 @@ function Options:BuildSettings(cat)
         key = "useGiganticBobber",
         name = "使用巨型鱼漂",
         desc = "每次抛竿前自动使用\"可重复使用的巨型鱼漂\"玩具，放大鱼漂便于观察",
-        default = db.useGiganticBobber,
-        get = function() return db.useGiganticBobber end,
-        set = function(_, value) db.useGiganticBobber = value end,
-    })
-
-    -- Use Bobber Toy
-    SettingsLib:CreateCheckbox(cat, {
-        key = "useBobberToy",
-        name = "使用浮标",
-        desc = "每次抛竿前自动使用选择的浮标玩具改变鱼漂外观",
-        default = db.useBobberToy,
-        get = function() return db.useBobberToy end,
-        set = function(_, value) db.useBobberToy = value end,
+        default = db.useGiganticBobber or false,
+        get = function() return db.useGiganticBobber or false end,
+        set = function(value) db.useGiganticBobber = value end,
     })
 
     -- Bobber Toy Dropdown
     SettingsLib:CreateDropdown(cat, {
         key = "selectedBobberToy",
         name = "选择浮标",
-        desc = "选择要使用的浮标玩具",
-        default = db.selectedBobberToy or "",
-        get = function() return db.selectedBobberToy or "" end,
-        set = function(_, value)
-            db.selectedBobberToy = (value ~= "" and value) or nil
+        desc = "选择要使用的浮标玩具（选择'无'表示不使用自定义浮标）",
+        varType = Settings.VarType.String,
+        default = db.selectedBobberToy and tostring(db.selectedBobberToy) or "",
+        get = function() return db.selectedBobberToy and tostring(db.selectedBobberToy) or "" end,
+        set = function(value)
+            if value and value ~= "" then
+                db.selectedBobberToy = tonumber(value)
+            else
+                db.selectedBobberToy = nil
+            end
         end,
         optionfunc = function()
             local options = { [""] = "无" }
             local ownedBobbers = Catfish.Modules.Toys and Catfish.Modules.Toys:GetOwnedBobbers() or {}
+            -- Filter out the Gigantic Bobber (toyID 202207) - it's controlled by its own checkbox
+            local GIGANTIC_BOBBER_TOY_ID = 202207
             for _, toy in ipairs(ownedBobbers) do
-                options[toy.toyID] = toy.name
+                if toy.toyID ~= GIGANTIC_BOBBER_TOY_ID then
+                    options[tostring(toy.toyID)] = toy.name
+                end
             end
             return options
         end,
@@ -348,9 +347,9 @@ function Options:BuildSettings(cat)
         key = "keepAutoLoot",
         name = "保持自动拾取",
         desc = "每次抛竿时自动检查并开启自动拾取功能",
-        default = db.keepAutoLoot,
-        get = function() return db.keepAutoLoot end,
-        set = function(_, value) db.keepAutoLoot = value end,
+        default = db.keepAutoLoot or false,
+        get = function() return db.keepAutoLoot or false end,
+        set = function(value) db.keepAutoLoot = value end,
     })
 
     -- Hide Minimap Button
@@ -358,9 +357,9 @@ function Options:BuildSettings(cat)
         key = "hideMinimap",
         name = "隐藏小地图按钮",
         desc = "隐藏小地图上的插件按钮",
-        default = Catfish.charDB.minimap.hide,
-        get = function() return Catfish.charDB.minimap.hide end,
-        set = function(_, value)
+        default = Catfish.charDB.minimap.hide or false,
+        get = function() return Catfish.charDB.minimap.hide or false end,
+        set = function(value)
             Catfish.charDB.minimap.hide = value
             if Catfish.UI.MinimapButton then
                 if value then
@@ -377,9 +376,9 @@ function Options:BuildSettings(cat)
         key = "debugMode",
         name = "启用调试模式",
         desc = "在聊天框输出详细的调试信息，用于排查问题",
-        default = db.debugMode,
-        get = function() return db.debugMode end,
-        set = function(_, value) db.debugMode = value end,
+        default = db.debugMode or false,
+        get = function() return db.debugMode or false end,
+        set = function(value) db.debugMode = value end,
     })
 end
 

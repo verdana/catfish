@@ -228,8 +228,8 @@ function Toys:UseConfiguredToys()
         self:UseRaft()
     end
 
-    -- Use bobber before casting
-    self:UseBobber()
+    -- NOTE: Bobbers are now handled by Core.lua using db.selectedBobberToy
+    -- The old db.toys.selectedBobber system is deprecated for bobbers
 
     -- Use any configured extra toys
     self:UseExtraToys()

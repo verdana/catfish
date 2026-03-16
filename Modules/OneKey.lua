@@ -68,6 +68,36 @@ function OneKey:UpdateGiganticBobberCache()
     end
 end
 
+-- Get custom bobber toy name if selected
+local function GetCustomBobberName()
+    local toyID = Catfish.db.selectedBobberToy
+    if not toyID then
+        return nil
+    end
+    return Catfish.API:GetItemName(toyID)
+end
+
+-- Check if we need to use custom bobber toy
+local function NeedsCustomBobber()
+    if not Catfish.db.selectedBobberToy then
+        return false
+    end
+
+    -- Check if player has the toy
+    if not Catfish.API:PlayerHasToy(Catfish.db.selectedBobberToy) then
+        return false
+    end
+
+    -- Check if toy is on cooldown
+    local cooldown = Catfish.API:GetToyCooldown(Catfish.db.selectedBobberToy)
+    if cooldown > 0 then
+        Catfish:Debug("OneKey: NeedsCustomBobber - toy on cooldown:", cooldown)
+        return false
+    end
+
+    return true
+end
+
 local function NeedsGiganticBobber()
     if not Catfish.db.useGiganticBobber then
         Catfish:Debug("OneKey: NeedsGiganticBobber - option disabled")
@@ -254,6 +284,23 @@ function OneKey:UpdateBinding(skipCooldownCheck)
                 if spellName then
                     SetOverrideBindingSpell(self.autoButton, true, normalizedKey, spellName)
                     Catfish:Debug("OneKey: Bound to fishing spell (fallback):", spellName)
+                end
+            end
+        elseif NeedsCustomBobber() then
+            -- Use custom bobber toy before fishing
+            local bobberName = GetCustomBobberName()
+            local spellName = GetFishingSpellName()
+            if bobberName and spellName then
+                -- Create macro: use bobber toy then cast fishing
+                local macroText = "/use " .. bobberName .. "\n/cast " .. spellName
+                Catfish.API:SetToyButtonMacro(macroText)
+                SetOverrideBindingClick(self.autoButton, true, normalizedKey, "CatfishToyButton")
+                Catfish:Debug("OneKey: Bound to custom bobber macro:", bobberName)
+            else
+                -- Fall back to fishing spell
+                if spellName then
+                    SetOverrideBindingSpell(self.autoButton, true, normalizedKey, spellName)
+                    Catfish:Debug("OneKey: Bound to fishing spell (custom bobber fallback):", spellName)
                 end
             end
         else

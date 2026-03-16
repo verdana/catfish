@@ -35,6 +35,9 @@ Core.lastCastTime = 0
 Core.bobberGUID = nil
 Core.bobberUnit = nil
 
+-- Gigantic Bobber state tracking
+Core.giganticBobberUsedLastCast = false
+
 -- ============================================
 -- State Transition
 -- ============================================
@@ -213,20 +216,32 @@ function Core:StartFishing()
         Catfish.Modules.Toys:UseConfiguredToys()
     end
 
-    -- Use Gigantic Bobber if enabled (returns true if toy was used)
-    -- Don't cast fishing if toy was used - player needs to wait for cast time
-    if Catfish.db.useGiganticBobber then
+    -- Check if Gigantic Bobber buff is already active
+    local giganticBobberActive = Catfish.API:UnitHasBuff("player", GIGANTIC_BOBBER_BUFF_ID)
+    Catfish:Debug("Gigantic Bobber active:", giganticBobberActive)
+    Catfish:Debug("useGiganticBobber setting:", Catfish.db.useGiganticBobber)
+    Catfish:Debug("selectedBobberToy:", Catfish.db.selectedBobberToy)
+
+    -- Use Gigantic Bobber if enabled and buff not active
+    if Catfish.db.useGiganticBobber and not giganticBobberActive then
         local usedToy = self:UseGiganticBobber()
         if usedToy then
             Catfish:Debug("Used Gigantic Bobber toy - press again to fish")
-            return true
+            self.giganticBobberUsedLastCast = true
+            return true  -- Wait for next cast to use bobber toy and fish
         end
     end
 
-    -- Use Bobber Toy if enabled (changes bobber appearance)
-    if Catfish.db.useBobberToy and Catfish.db.selectedBobberToy then
-        self:UseBobberToy()
+    -- Use Bobber Toy if selected (selectedBobberToy ~= nil means a bobber is selected)
+    -- Use it when: Gigantic Bobber buff is already active, OR we didn't just use Gigantic Bobber
+    if Catfish.db.selectedBobberToy then
+        if giganticBobberActive or not self.giganticBobberUsedLastCast then
+            self:UseBobberToy()
+        end
     end
+
+    -- Reset the flag after considering bobber toys
+    self.giganticBobberUsedLastCast = false
 
     -- Start session if not active
     if not self.sessionActive then
@@ -298,6 +313,7 @@ end
 
 function Core:UseBobberToy()
     local toyID = Catfish.db.selectedBobberToy
+    Catfish:Debug("UseBobberToy called, toyID:", toyID)
     if not toyID then
         Catfish:Debug("No bobber toy selected")
         return false
@@ -318,7 +334,9 @@ function Core:UseBobberToy()
 
     -- Use the toy
     Catfish:Debug("Using bobber toy:", toyID)
-    return Catfish.API:UseToy(toyID)
+    local result = Catfish.API:UseToy(toyID)
+    Catfish:Debug("UseBobberToy result:", result and "SUCCESS" or "FAILED")
+    return result
 end
 
 function Core:CancelFishing()
