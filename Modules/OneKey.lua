@@ -182,8 +182,9 @@ local BLOCKED_KEYS = {
 }
 
 -- Update binding based on current state
-function OneKey:UpdateBinding()
-    Catfish:Debug("OneKey: UpdateBinding called")
+-- @param skipCooldownCheck If true, skip the reel cooldown check (used by scheduled updates)
+function OneKey:UpdateBinding(skipCooldownCheck)
+    Catfish:Debug("OneKey: UpdateBinding called", skipCooldownCheck and "(skip cooldown)" or "")
 
     -- Cannot update bindings during combat lockdown
     if InCombatLockdown() then
@@ -227,10 +228,13 @@ function OneKey:UpdateBinding()
         Catfish:Debug("OneKey: Bound to INTERACTTARGET (softTarget:", softTarget ~= nil, "hasBuff:", hasFishingBuff, "isFishing:", isFishing, "state:", state, ")")
     else
         -- Check if we're in cooldown after reeling (to prevent accidental cast after loot)
-        local timeSinceReel = GetTime() - self.lastReelTime
-        if timeSinceReel < self.reelCooldown then
-            Catfish:Debug("OneKey: UpdateBinding skipped - in reel cooldown")
-            return
+        -- Skip this check if called from scheduled update
+        if not skipCooldownCheck then
+            local timeSinceReel = GetTime() - self.lastReelTime
+            if timeSinceReel < self.reelCooldown then
+                Catfish:Debug("OneKey: UpdateBinding skipped - in reel cooldown")
+                return
+            end
         end
 
         -- Check if we need to use Gigantic Bobber toy first
@@ -343,12 +347,10 @@ function OneKey:OnStateChanged()
         self.lastReelTime = GetTime()
 
         -- Schedule binding update after cooldown
-        -- Using simpler approach: let UpdateBinding handle all condition checks
+        -- Pass true to skip cooldown check since we're already waiting the cooldown period
         C_Timer.After(self.reelCooldown, function()
             Catfish:Debug("OneKey: Scheduled binding update triggered")
-            -- Let UpdateBinding handle all condition checks internally
-            -- This is more reliable than duplicating checks here
-            self:UpdateBinding()
+            self:UpdateBinding(true)  -- Skip cooldown check
         end)
     end
 
