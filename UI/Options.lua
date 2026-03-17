@@ -287,14 +287,31 @@ function Options:BuildSettings(cat)
 
     SettingsLib:CreateHeader(cat, "玩具设置")
 
-    -- Auto Use Toys
-    SettingsLib:CreateCheckbox(cat, {
-        key = "autoToys",
-        name = "自动使用玩具",
-        desc = "钓鱼时自动使用配置的木筏、鱼漂等玩具",
-        default = db.autoToys or false,
-        get = function() return db.autoToys or false end,
-        set = function(value) db.autoToys = value end,
+    -- Raft Dropdown
+    SettingsLib:CreateDropdown(cat, {
+        key = "selectedRaft",
+        name = "选择钓鱼筏",
+        desc = "选择游泳时要使用的钓鱼筏（选择'无'表示不使用钓鱼筏）",
+        varType = Settings.VarType.String,
+        default = db.toys.selectedRaft and tostring(db.toys.selectedRaft) or "",
+        get = function() return db.toys.selectedRaft and tostring(db.toys.selectedRaft) or "" end,
+        set = function(value)
+            if value and value ~= "" then
+                db.toys.selectedRaft = tonumber(value)
+                db.toys.raftMode = "specific"
+            else
+                db.toys.selectedRaft = nil
+                db.toys.raftMode = "none"
+            end
+        end,
+        optionfunc = function()
+            local options = { [""] = "无" }
+            local ownedRafts = Catfish.Modules.Toys and Catfish.Modules.Toys:GetOwnedRafts() or {}
+            for _, toy in ipairs(ownedRafts) do
+                options[tostring(toy.toyID)] = toy.name
+            end
+            return options
+        end,
     })
 
     -- Use Gigantic Bobber

@@ -77,6 +77,113 @@ local function GetCustomBobberName()
     return Catfish.API:GetItemName(toyID)
 end
 
+-- Get raft toy name if selected and available
+local function GetRaftName()
+    local config = Catfish.db.toys
+    if config.raftMode == "none" then
+        return nil
+    end
+
+    if config.raftMode == "specific" and config.selectedRaft then
+        local cooldown = Catfish.API:GetToyCooldown(config.selectedRaft)
+        if cooldown == 0 then
+            return Catfish.API:GetItemName(config.selectedRaft)
+        end
+        return nil
+    end
+
+    -- Random mode: get first available raft
+    if Catfish.Modules.Toys then
+        local rafts = Catfish.Modules.Toys:GetOwnedRafts()
+        for _, toy in ipairs(rafts) do
+            local cooldown = Catfish.API:GetToyCooldown(toy.toyID)
+            if cooldown == 0 then
+                return toy.name
+            end
+        end
+    end
+    return nil
+end
+
+-- Get raft spellID for buff check
+local function GetRaftSpellID()
+    local config = Catfish.db.toys
+    if config.raftMode == "none" then
+        return nil
+    end
+
+    if config.raftMode == "specific" and config.selectedRaft then
+        -- Find the spellID for selected raft
+        if Catfish.Data.Toys and Catfish.Data.Toys.Rafts then
+            for _, toy in ipairs(Catfish.Data.Toys.Rafts) do
+                if toy.toyID == config.selectedRaft then
+                    return toy.spellID
+                end
+            end
+        end
+        return nil
+    end
+
+    -- Random mode: get spellID of first available raft
+    if Catfish.Modules.Toys then
+        local rafts = Catfish.Modules.Toys:GetOwnedRafts()
+        for _, toy in ipairs(rafts) do
+            local cooldown = Catfish.API:GetToyCooldown(toy.toyID)
+            if cooldown == 0 then
+                return toy.spellID
+            end
+        end
+    end
+    return nil
+end
+
+-- Check if player already has raft buff
+local function HasRaftBuff()
+    -- Check all known raft spell IDs
+    local raftSpellIDs = {383268, 124036, 288758, 1218420}
+    for _, spellID in ipairs(raftSpellIDs) do
+        if Catfish.API:UnitHasBuff("player", spellID) then
+            return true
+        end
+    end
+    return false
+end
+
+-- Get raft buff spell name for macro conditionals
+local RAFT_BUFF_NAMES = {
+    "Tuskarr Dinghy",      -- 383268
+    "Anglers Fishing Raft", -- 124036
+    "Gnarlwood Waveboard",  -- 288758
+    "Personal Fishing Barge", -- 1218420
+}
+
+-- Get raft buff name for macro conditional
+local function GetRaftBuffNameForMacro()
+    -- Return a condition string that checks for NO raft buffs
+    -- In WoW macros, [] groups are AND conditions
+    -- Format: [nobuff:BuffA][nobuff:BuffB]...
+    local conditions = {}
+    for _, buffName in ipairs(RAFT_BUFF_NAMES) do
+        table.insert(conditions, "[nobuff:" .. buffName .. "]")
+    end
+    return table.concat(conditions, "")
+end
+
+-- Check if we need to use raft
+local function NeedsRaft()
+    if Catfish.db.toys.raftMode == "none" then
+        return false
+    end
+    if not IsSwimming() then
+        return false
+    end
+    -- Already on a raft
+    if HasRaftBuff() then
+        return false
+    end
+    return GetRaftName() ~= nil
+end
+
 -- Check if we need to use custom bobber toy
 local function NeedsCustomBobber()
     if not Catfish.db.selectedBobberToy then
@@ -127,6 +234,11 @@ local function NeedsGiganticBobber()
 
     Catfish:Debug("OneKey: NeedsGiganticBobber - returning true")
     return true
+end
+
+-- Check if any swim toy is needed
+local function NeedsSwimToys()
+    return IsSwimming() and (NeedsRaft() or NeedsGiganticBobber() or NeedsCustomBobber())
 end
 
 -- ============================================
@@ -240,12 +352,6 @@ function OneKey:UpdateBinding(skipCooldownCheck)
     -- Clear existing binding first
     ClearOverrideBindings(self.autoButton)
 
-    -- Skip binding if swimming (let key retain original function)
-    if IsSwimming() then
-        Catfish:Debug("OneKey: UpdateBinding skipped - player swimming")
-        return
-    end
-
     local normalizedKey = KEY_NORMALIZE[self.keybind] or self.keybind
     local softTarget = GetSoftInteractTarget and GetSoftInteractTarget()
     local hasFishingBuff = HasFishingBuff()
@@ -265,6 +371,23 @@ function OneKey:UpdateBinding(skipCooldownCheck)
                 Catfish:Debug("OneKey: UpdateBinding skipped - in reel cooldown")
                 return
             end
+        end
+
+        -- Swimming with toys configured - use smart swim macro
+        if IsSwimming() and NeedsSwimToys() then
+            local macroText = self:GetSwimFishingMacro()
+            if macroText then
+                Catfish.API:SetToyButtonMacro(macroText)
+                SetOverrideBindingClick(self.autoButton, true, normalizedKey, "CatfishToyButton")
+                Catfish:Debug("OneKey: Bound to swim fishing macro")
+            end
+            return
+        end
+
+        -- Swimming without toys - no binding (let SPACE work normally for ascending)
+        if IsSwimming() then
+            Catfish:Debug("OneKey: Swimming without toys - no binding set")
+            return
         end
 
         -- Check if we need to use Gigantic Bobber toy first
@@ -425,6 +548,59 @@ function OneKey:OnToyUsed(toyID)
             Catfish:Debug("OneKey: In combat, skipping binding update")
         end
     end)
+end
+
+-- ============================================
+-- Swim Fishing Macro Generation
+-- ============================================
+
+function OneKey:GetSwimFishingMacro()
+    local macroLines = {}
+    local spellName = GetFishingSpellName() or "钓鱼"
+
+    -- 1. Use raft if configured and no buff (Lua checks, updated on buff change)
+    if NeedsRaft() then
+        local raftName = GetRaftName()
+        if raftName then
+            table.insert(macroLines, "/use " .. raftName)
+        end
+    end
+
+    -- 2. Use Gigantic Bobber if enabled and no buff (Lua checks)
+    if NeedsGiganticBobber() then
+        local giganticName = GetGiganticBobberName()
+        if giganticName then
+            table.insert(macroLines, "/use " .. giganticName)
+        end
+    end
+
+    -- 3. Use custom bobber if selected (cooldown check in Lua)
+    if NeedsCustomBobber() then
+        local bobberName = GetCustomBobberName()
+        if bobberName then
+            table.insert(macroLines, "/use " .. bobberName)
+        end
+    end
+
+    -- 4. Finally: cast fishing
+    table.insert(macroLines, "/cast " .. spellName)
+
+    return table.concat(macroLines, "\n")
+end
+
+-- ============================================
+-- Event Handling for Buff Changes
+-- ============================================
+
+function OneKey:OnUnitAuraEvent(unit)
+    -- Only care about player's aura changes
+    if unit ~= "player" then return end
+
+    -- Update binding if we're swimming (to re-evaluate raft buff)
+    if IsSwimming() and self.keybind and self.autoButton and not InCombatLockdown() then
+        Catfish:Debug("OneKey: OnUnitAuraEvent - updating swim binding")
+        self:UpdateBinding()
+    end
 end
 
 -- ============================================

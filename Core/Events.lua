@@ -291,6 +291,10 @@ function Events.UNIT_AURA(unit)
         if Catfish.Modules.LureManager then
             Catfish.Modules.LureManager:OnAuraChanged()
         end
+        -- Update OneKey binding when swimming (raft buff may have changed)
+        if Catfish.Modules.OneKey then
+            Catfish.Modules.OneKey:OnUnitAuraEvent(unit)
+        end
     end
 end
 
