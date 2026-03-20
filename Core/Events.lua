@@ -140,8 +140,12 @@ end
 -- ============================================
 
 function Events.CHAT_MSG_LOOT(message, playerName, languageName, channelName, playerName2, specialFlags, zoneChannelID, channelIndex, channelBaseName, unused, lineID, senderGUID, senderName)
-    -- Parse loot message
-    if playerName == Catfish.API:GetPlayerName() then
+    -- Use pcall to handle tainted strings in instances
+    local ok, isPlayer = pcall(function()
+        return playerName == Catfish.API:GetPlayerName()
+    end)
+    -- Parse loot message only if it's the player's loot
+    if ok and isPlayer then
         Events:ParseLootMessage(message)
     end
 end
@@ -314,13 +318,17 @@ end
 -- ============================================
 
 function Events.CHAT_MSG_SYSTEM(message)
-    -- Check for skill increase
-    if message:find("Your skill in Fishing has increased to") then
-        local newSkill = message:match("increased to (%d+)")
-        if newSkill then
-            Catfish:Debug("Fishing skill increased to:", newSkill)
+    -- Use pcall to handle tainted strings in instances
+    local ok, result = pcall(function()
+        -- Check for skill increase
+        if message:find("Your skill in Fishing has increased to") then
+            local newSkill = message:match("increased to (%d+)")
+            if newSkill then
+                Catfish:Debug("Fishing skill increased to:", newSkill)
+            end
         end
-    end
+    end)
+    -- Silently ignore errors from tainted strings
 end
 
 -- ============================================
