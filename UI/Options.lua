@@ -359,6 +359,21 @@ function Options:BuildSettings(cat)
 
     SettingsLib:CreateHeader(cat, "其它设置")
 
+    -- Sound Management
+    SettingsLib:CreateCheckbox(cat, {
+        key = "soundManagement",
+        name = "钓鱼时自动管理声音",
+        desc = "激活时自动开启后台声音、关闭音乐、最大化音效音量，休眠时恢复原始设置",
+        default = db.soundManagement or false,
+        get = function() return db.soundManagement or false end,
+        set = function(value)
+            db.soundManagement = value
+            if Catfish.Modules.SoundManager then
+                Catfish.Modules.SoundManager:SetEnabled(value)
+            end
+        end,
+    })
+
     -- Keep Auto Loot
     SettingsLib:CreateCheckbox(cat, {
         key = "keepAutoLoot",

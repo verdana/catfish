@@ -263,6 +263,10 @@ function MinimapButton:SetActiveMode()
     if Catfish.Modules.DoubleClick then
         Catfish.Modules.DoubleClick:RestoreBinding()
     end
+    -- Apply sound settings when activating
+    if Catfish.Modules.SoundManager then
+        Catfish.Modules.SoundManager:OnActivate()
+    end
     Catfish:Print("已激活")
 end
 
@@ -275,6 +279,10 @@ function MinimapButton:SetSleepMode()
     end
     if Catfish.Modules.DoubleClick then
         Catfish.Modules.DoubleClick:ClearBinding()
+    end
+    -- Restore sound settings when sleeping
+    if Catfish.Modules.SoundManager then
+        Catfish.Modules.SoundManager:OnSleep()
     end
     Catfish:Print("已休眠")
 end

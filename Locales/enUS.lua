@@ -56,6 +56,8 @@ L.ENABLE_AUTOEQUIP = "Auto-Equip Fishing Gear"
 L.ENABLE_AUTOLURE = "Auto-Apply Lures"
 L.ENABLE_AUTOTOYS = "Auto-Use Toys"
 L.ENABLE_SOUNDS = "Sound Alerts"
+L.ENABLE_SOUND_MANAGEMENT = "Manage Sound While Fishing"
+L.SOUND_MANAGEMENT_DESC = "Enable background sound, mute music, and maximize SFX when fishing. Restore on sleep."
 L.RESTORE_GEAR = "Restore Original Gear After Fishing"
 
 L.SET_KEYBIND = "Set Keybind"

@@ -25,6 +25,7 @@ local DEFAULT_DB = {
     autoToys = true,  -- 自动使用玩具（木筏、鱼漂等）
     keepAutoLoot = true,  -- 保持自动拾取
     selectedBobberToy = nil,  -- 选择的浮标玩具 toyID（nil 表示不使用）
+    soundManagement = false,  -- 钓鱼时自动管理声音设置
     stats = {
         total = {
             catches = 0,
@@ -219,6 +220,9 @@ frame:SetScript("OnEvent", function(self, event, arg1, ...)
         end
         if Catfish.Modules.LureManager then
             Catfish.Modules.LureManager:Init()
+        end
+        if Catfish.Modules.SoundManager then
+            Catfish.Modules.SoundManager:Init()
         end
 
         -- Initialize UI

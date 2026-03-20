@@ -52,6 +52,8 @@ L.TAB_STATS = "统计数据"
 
 L.ENABLE_ONEKEY = "启用一键钓鱼"
 L.ENABLE_DOUBLECLICK = "启用双击钓鱼"
+L.ENABLE_SOUND_MANAGEMENT = "钓鱼时自动管理声音"
+L.SOUND_MANAGEMENT_DESC = "激活时开启后台声音、关闭音乐、最大化音效，休眠时恢复原始设置"
 L.USE_GIGANTIC_BOBBER = "使用巨型鱼漂"
 
 L.SET_KEYBIND = "设置快捷键"
