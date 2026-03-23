@@ -390,6 +390,12 @@ function OneKey:UpdateBinding(skipCooldownCheck)
             return
         end
 
+        -- Mounted - no binding (let keys work normally for mount control)
+        if IsMounted() then
+            Catfish:Debug("OneKey: Mounted - no binding set")
+            return
+        end
+
         -- Check if we need to use Gigantic Bobber toy first
         if NeedsGiganticBobber() then
             -- Set up the toy button with macro (like Angleur does)

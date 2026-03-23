@@ -35,6 +35,7 @@ local REGISTERED_EVENTS = {
     "UNIT_AURA",
     "CURSOR_CHANGED",
     "GET_ITEM_INFO_RECEIVED",  -- For item data delayed loading
+    "PLAYER_MOUNT_DISPLAY_CHANGED",  -- For mount state changes
 }
 
 -- ============================================
@@ -253,6 +254,17 @@ function Events.PLAYER_STOPPED_MOVING()
         if Catfish.Modules.OneKey and Catfish.Modules.OneKey.UpdateBinding then
             Catfish.Modules.OneKey:UpdateBinding()
         end
+    end
+end
+
+-- ============================================
+-- Mount Events
+-- ============================================
+
+function Events.PLAYER_MOUNT_DISPLAY_CHANGED()
+    -- Update OneKey binding when mount state changes
+    if Catfish.Modules.OneKey and Catfish.Modules.OneKey.UpdateBinding then
+        Catfish.Modules.OneKey:UpdateBinding()
     end
 end
 
