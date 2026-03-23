@@ -141,9 +141,6 @@ function Statistics:AnnounceRareCatch(itemID, quantity)
     if quality >= 4 then
         Catfish:Print("★ EPIC CATCH:", itemName, quantityText, "at", subZone)
         PlaySound(8959) -- RAID_WARNING
-    else
-        Catfish:Print("★ Rare catch:", itemName, quantityText, "at", subZone)
-        PlaySound(8960) -- IG_QUEST_COMPLETE
     end
 end
 
@@ -304,6 +301,20 @@ function Statistics:GetQualityName(quality)
         [7] = "Heirloom",
     }
     return names[quality] or "Unknown"
+end
+
+-- ============================================
+-- Treasure Chest Detection
+-- ============================================
+
+function Statistics:OnTreasureChestSpawned()
+    -- 检查是否启用了宝箱提示音
+    if not Catfish.db.treasureChestSound then
+        return
+    end
+
+    Catfish:Print("★ 检测到藏宝箱！")
+    PlaySound(8960) -- IG_QUEST_COMPLETE
 end
 
 function Statistics:FormatTime(seconds)

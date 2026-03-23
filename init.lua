@@ -28,6 +28,7 @@ local DEFAULT_DB = {
     soundManagement = false,  -- 钓鱼时自动管理声音设置
     showStatsHUD = true,  -- 显示统计 HUD
     statsOnlyFish = true,  -- 只统计鱼类
+    treasureChestSound = true,  -- 宝箱出现时播放提示音
     stats = {
         total = {
             catches = 0,

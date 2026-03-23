@@ -24,6 +24,8 @@ local REGISTERED_EVENTS = {
     "UI_ERROR_MESSAGE",
     "CHAT_MSG_LOOT",
     "CHAT_MSG_SYSTEM",
+    "CHAT_MSG_EMOTE",  -- 玩家表情
+    "CHAT_MSG_MONSTER_EMOTE",  -- 怪物表情（宝箱、根须蟹等消息）
     "PLAYER_REGEN_DISABLED",
     "PLAYER_REGEN_ENABLED",
     "PLAYER_STARTED_MOVING",
@@ -337,6 +339,33 @@ function Events.CHAT_MSG_SYSTEM(message)
             local newSkill = message:match("increased to (%d+)")
             if newSkill then
                 Catfish:Debug("Fishing skill increased to:", newSkill)
+            end
+        end
+    end)
+    -- Silently ignore errors from tainted strings
+end
+
+-- ============================================
+-- Emote Events (宝箱出现消息)
+-- ============================================
+
+function Events.CHAT_MSG_EMOTE(message, playerName, languageName, channelName, playerName2, specialFlags, zoneChannelID, channelIndex, channelBaseName, unused, lineID, senderGUID, senderName)
+    -- 玩家表情，暂不处理
+end
+
+-- ============================================
+-- Monster Emote Events (宝箱出现消息)
+-- ============================================
+
+function Events.CHAT_MSG_MONSTER_EMOTE(message, playerName, languageName, channelName, playerName2, specialFlags, zoneChannelID, channelIndex, channelBaseName, unused, lineID, senderGUID, senderName)
+    -- Use pcall to handle tainted strings in instances
+    local ok, result = pcall(function()
+        local playerName = Catfish.API:GetPlayerName()
+
+        -- 宝箱消息格式：一个藏宝箱为{角色名}出现了！
+        if message:find("藏宝箱") and message:find(playerName) and message:find("出现了") then
+            if Catfish.Modules.Statistics then
+                Catfish.Modules.Statistics:OnTreasureChestSpawned()
             end
         end
     end)
