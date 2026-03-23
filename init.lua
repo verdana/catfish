@@ -26,6 +26,8 @@ local DEFAULT_DB = {
     keepAutoLoot = true,  -- 保持自动拾取
     selectedBobberToy = nil,  -- 选择的浮标玩具 toyID（nil 表示不使用）
     soundManagement = false,  -- 钓鱼时自动管理声音设置
+    showStatsHUD = true,  -- 显示统计 HUD
+    statsOnlyFish = true,  -- 只统计鱼类
     stats = {
         total = {
             catches = 0,
@@ -235,6 +237,10 @@ frame:SetScript("OnEvent", function(self, event, arg1, ...)
         -- Initialize Options panel at startup so it appears in ESC->Options->AddOns
         if Catfish.UI.Options then
             Catfish.UI.Options:Init()
+        end
+        -- Initialize StatsHUD
+        if Catfish.UI.StatsHUD then
+            Catfish.UI.StatsHUD:Init()
         end
 
     elseif event == "PLAYER_ENTERING_WORLD" then

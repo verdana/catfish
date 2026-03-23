@@ -81,6 +81,18 @@ L.STATS_TOP_ZONES = "最常钓鱼地点"
 L.STATS_RARE_CATCHES = "稀有钓获记录"
 L.STATS_NO_RARES = "还没有记录到稀有钓获!"
 
+-- Stats HUD
+L.STATS_HUD_TITLE = "钓鱼统计"
+L.STATS_DURATION = "持续时间"
+L.STATS_CASTS = "抛竿次数"
+L.STATS_TOTAL_LOOT = "总收获"
+L.STATS_ITEMS_BREAKDOWN = "鱼获明细"
+L.STATS_NO_LOOT = "暂无收获"
+L.SHOW_STATS_HUD = "显示统计 HUD"
+L.SHOW_STATS_HUD_DESC = "在屏幕上显示钓鱼统计数据（持续时间、抛竿次数、鱼获等）"
+L.STATS_ONLY_FISH = "只统计鱼类"
+L.STATS_ONLY_FISH_DESC = "开启后只统计鱼类物品，排除垃圾、装备、图纸等其他物品"
+
 L.RESET_STATS = "重置统计数据"
 L.RESET_SESSION = "重置会话"
 L.STATS_RESET = "统计数据已重置"

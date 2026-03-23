@@ -38,6 +38,7 @@ UI\DebugLog.lua
 UI\Options.lua
 UI\StatsWindow.lua
 UI\ToySelector.lua
+UI\StatsHUD.lua
 
 # 数据
 Data\FishingPoles.lua

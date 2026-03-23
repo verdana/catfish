@@ -249,7 +249,7 @@ function Options:BuildSettings(cat)
         end,
     })
 
-    -- Keybind button - use CreateButton with current keybind text
+    -- Keybind button
     local currentKeybind = CatfishCharDB.keybinding or NOT_BOUND
     SettingsLib:CreateButton(cat, {
         key = "oneKeyKeybind",
@@ -354,6 +354,41 @@ function Options:BuildSettings(cat)
     })
 
     -- ============================================
+    -- Statistics Section
+    -- ============================================
+
+    SettingsLib:CreateHeader(cat, "统计设置")
+
+    -- Show Stats HUD
+    local showStatsHUDElement = SettingsLib:CreateCheckbox(cat, {
+        key = "showStatsHUD",
+        name = "显示统计 HUD",
+        desc = "在屏幕上显示钓鱼统计数据（持续时间、抛竿次数、鱼获等）",
+        default = true,
+        get = function() return db.showStatsHUD == true end,
+        set = function(value)
+            db.showStatsHUD = value
+            if Catfish.UI.StatsHUD then
+                Catfish.UI.StatsHUD:SetEnabled(value)
+            end
+        end,
+    })
+
+    -- Only Count Fish (depends on showStatsHUD)
+    SettingsLib:CreateCheckbox(cat, {
+        key = "statsOnlyFish",
+        name = "只统计鱼类",
+        desc = "开启后只统计鱼类物品，排除垃圾、装备、图纸等其他物品",
+        default = true,
+        get = function() return db.statsOnlyFish == true end,
+        set = function(value)
+            db.statsOnlyFish = value
+        end,
+        parent = showStatsHUDElement,
+        parentCheck = function() return db.showStatsHUD == true end,
+    })
+
+    -- ============================================
     -- Other Settings Section
     -- ============================================
 
@@ -417,6 +452,91 @@ end
 -- ============================================
 -- Keybind Dialog
 -- ============================================
+
+function Options:StartKeybindCapture()
+    -- Create or show capture frame
+    if not self.captureFrame then
+        self:CreateCaptureFrame()
+    end
+    self.captureFrame:Show()
+    self.captureFrame:SetFocus()
+end
+
+function Options:CreateCaptureFrame()
+    -- Create a full-screen transparent frame to capture key input
+    local frame = CreateFrame("EditBox", "CatfishKeybindCapture", UIParent)
+    frame:SetAllPoints(UIParent)
+    frame:SetFrameStrata("FULLSCREEN_DIALOG")
+    frame:SetFrameLevel(1000)
+    frame:EnableMouse(true)
+    frame:SetAutoFocus(false)
+
+    -- Visual hint
+    local hint = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    hint:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+    hint:SetText("按下按键设置快捷键，按ESC清除")
+
+    local bg = frame:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    bg:SetColorTexture(0, 0, 0, 0.3)
+
+    -- Ignore modifier-only keys
+    local ignoreKeys = {
+        ["LSHIFT"] = true, ["RSHIFT"] = true,
+        ["LCTRL"] = true, ["RCTRL"] = true,
+        ["LALT"] = true, ["RALT"] = true,
+        ["UNKNOWN"] = true,
+    }
+
+    frame:SetScript("OnKeyDown", function(self, key)
+        -- ESC clears the binding
+        if key == "ESCAPE" then
+            if Catfish.Modules.OneKey then
+                Catfish.Modules.OneKey:SetKeybind(nil)
+            end
+            self:Hide()
+            self:ClearFocus()
+            Options:RefreshKeybindButton()
+            return
+        end
+
+        -- Ignore modifier-only keys
+        if ignoreKeys[key] then return end
+
+        -- Build the key string with modifiers
+        local keyStr = key
+        if IsShiftKeyDown() then
+            keyStr = "SHIFT-" .. keyStr
+        end
+        if IsControlKeyDown() then
+            keyStr = "CTRL-" .. keyStr
+        end
+        if IsAltKeyDown() then
+            keyStr = "ALT-" .. keyStr
+        end
+
+        -- Set the keybind
+        if Catfish.Modules.OneKey then
+            Catfish.Modules.OneKey:SetKeybind(keyStr)
+        end
+
+        self:Hide()
+        self:ClearFocus()
+        Options:RefreshKeybindButton()
+    end)
+
+    frame:SetScript("OnEditFocusLost", function(self)
+        self:Hide()
+    end)
+
+    frame:SetScript("OnMouseDown", function(self, button)
+        -- Cancel on mouse click
+        self:Hide()
+        self:ClearFocus()
+    end)
+
+    self.captureFrame = frame
+end
 
 function Options:ShowKeybindDialog()
     if not self.keybindDialog then

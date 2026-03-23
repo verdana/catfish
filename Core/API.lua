@@ -280,14 +280,16 @@ function API:PlayerHasToy(itemID)
 end
 
 function API:GetToyInfo(itemID)
-    local toyName, toyIcon, isFavorite, hasFanfare, itemID = C_ToyBox.GetToyInfo(itemID)
-    return {
-        name = toyName,
-        icon = toyIcon,
-        isFavorite = isFavorite,
-        hasFanfare = hasFanfare,
-        itemID = itemID,
-    }
+    -- GetItemInfo returns localized name reliably
+    local name, link, quality, iLevel, reqLevel, class, subclass, maxStack, equipSlot, texture, vendorPrice = GetItemInfo(itemID)
+    if name then
+        return {
+            name = name,
+            icon = texture,
+            itemID = itemID,
+        }
+    end
+    return nil
 end
 
 function API:UseToy(itemID)

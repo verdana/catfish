@@ -25,7 +25,7 @@ local FISHING_SOUND_SETTINGS = {
 -- ============================================
 
 local CVAR = {
-    BACKGROUND_SOUND = "Sound_EnableSoundWhenInGame",
+    BACKGROUND_SOUND = "Sound_EnableSoundWhenGameIsInBG",
     MUSIC_ENABLED = "Sound_EnableMusic",
     MUSIC_VOLUME = "Sound_MusicVolume",
     SFX_VOLUME = "Sound_SFXVolume",
@@ -111,6 +111,7 @@ function SoundManager:ApplyFishingSettings()
     -- 应用钓鱼时的设置
     SetCVarSafe(CVAR.BACKGROUND_SOUND, "1")  -- 开启后台声音
     SetCVarSafe(CVAR.MUSIC_ENABLED, "0")     -- 关闭音乐
+    SetCVarSafe(CVAR.MASTER_VOLUME, 1.0)     -- 主音量 100%
     SetCVarSafe(CVAR.SFX_VOLUME, FISHING_SOUND_SETTINGS.sfxVolume)  -- 音效最大
 
     Catfish:Debug("SoundManager: Applied fishing settings")

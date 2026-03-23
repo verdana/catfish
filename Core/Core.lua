@@ -249,6 +249,11 @@ function Core:StartFishing()
         self.sessionStartTime = GetTime()
     end
 
+    -- Record cast
+    if Catfish.Modules.Statistics then
+        Catfish.Modules.Statistics:RecordCast()
+    end
+
     -- Cast fishing
     Catfish.API:CastFishing()
     self:SetState(State.CASTING)
@@ -353,6 +358,17 @@ function Core:OnSpellCastStart(unit, castGUID, spellID)
     if unit ~= "player" then return end
     if not Catfish.API:IsFishingSpell(spellID) then return end
 
+    -- Start session if not active
+    if not self.sessionActive then
+        self.sessionActive = true
+        self.sessionStartTime = GetTime()
+    end
+
+    -- Record cast
+    if Catfish.Modules.Statistics then
+        Catfish.Modules.Statistics:RecordCast()
+    end
+
     -- Use configured toys (rafts, bobbers, extra toys) if auto-toys is enabled
     -- This happens during the cast, most toys can be used without interrupting
     if Catfish.db.autoToys and Catfish.Modules.Toys then
@@ -369,6 +385,17 @@ end
 function Core:OnSpellCastChannelStart(unit, castGUID, spellID)
     if unit ~= "player" then return end
     if not Catfish.API:IsFishingSpell(spellID) then return end
+
+    -- Start session if not active
+    if not self.sessionActive then
+        self.sessionActive = true
+        self.sessionStartTime = GetTime()
+    end
+
+    -- Record cast
+    if Catfish.Modules.Statistics then
+        Catfish.Modules.Statistics:RecordCast()
+    end
 
     -- Ensure auto loot is enabled if the option is set
     if Catfish.db.keepAutoLoot then

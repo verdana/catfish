@@ -85,6 +85,18 @@ L.STATS_TOP_ZONES = "Top Fishing Zones"
 L.STATS_RARE_CATCHES = "Rare Catches"
 L.STATS_NO_RARES = "No rare catches recorded yet!"
 
+-- Stats HUD
+L.STATS_HUD_TITLE = "Fishing Stats"
+L.STATS_DURATION = "Duration"
+L.STATS_CASTS = "Casts"
+L.STATS_TOTAL_LOOT = "Total Loot"
+L.STATS_ITEMS_BREAKDOWN = "Loot Breakdown"
+L.STATS_NO_LOOT = "No loot yet"
+L.SHOW_STATS_HUD = "Show Stats HUD"
+L.SHOW_STATS_HUD_DESC = "Display fishing statistics on screen (duration, casts, loot, etc.)"
+L.STATS_ONLY_FISH = "Only Count Fish"
+L.STATS_ONLY_FISH_DESC = "When enabled, only fish items are counted. Excludes junk, gear, recipes, etc."
+
 L.RESET_STATS = "Reset Statistics"
 L.RESET_SESSION = "Reset Session"
 L.STATS_RESET = "Statistics reset"

@@ -26,8 +26,16 @@ function Toys:ScanToys()
     if Catfish.Data.Toys.Rafts then
         for _, toy in ipairs(Catfish.Data.Toys.Rafts) do
             if Catfish.API:PlayerHasToy(toy.toyID) then
-                table.insert(self.ownedRafts, toy)
-                Catfish:Debug("Found raft:", toy.name)
+                -- Get localized name from WoW API
+                local toyInfo = Catfish.API:GetToyInfo(toy.toyID)
+                local localizedName = toyInfo and toyInfo.name or toy.name
+                table.insert(self.ownedRafts, {
+                    toyID = toy.toyID,
+                    name = localizedName,
+                    spellID = toy.spellID,
+                    icon = toyInfo and toyInfo.icon or toy.icon,
+                })
+                Catfish:Debug("Found raft:", localizedName)
             end
         end
     end
@@ -36,8 +44,16 @@ function Toys:ScanToys()
     if Catfish.Data.Toys.Bobbers then
         for _, toy in ipairs(Catfish.Data.Toys.Bobbers) do
             if Catfish.API:PlayerHasToy(toy.toyID) then
-                table.insert(self.ownedBobbers, toy)
-                Catfish:Debug("Found bobber:", toy.name)
+                -- Get localized name from WoW API
+                local toyInfo = Catfish.API:GetToyInfo(toy.toyID)
+                local localizedName = toyInfo and toyInfo.name or toy.name
+                table.insert(self.ownedBobbers, {
+                    toyID = toy.toyID,
+                    name = localizedName,
+                    spellID = toy.spellID,
+                    icon = toyInfo and toyInfo.icon or toy.icon,
+                })
+                Catfish:Debug("Found bobber:", localizedName)
             end
         end
     end

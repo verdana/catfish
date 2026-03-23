@@ -10,6 +10,8 @@ Catfish.Modules.Statistics = Statistics
 Statistics.sessionCatches = 0
 Statistics.sessionStartTime = 0
 Statistics.lastCatchTime = 0
+Statistics.sessionCasts = 0  -- 抛竿次数
+Statistics.sessionItems = {} -- 会话物品统计
 
 -- Loot tracking
 Statistics.pendingLoot = {}
@@ -34,6 +36,10 @@ function Statistics:RecordCatch(itemID)
     Catfish.db.stats.total.catches = Catfish.db.stats.total.catches + 1
     self.sessionCatches = self.sessionCatches + 1
     self.lastCatchTime = GetTime()
+
+    -- Update session items
+    self.sessionItems = self.sessionItems or {}
+    self.sessionItems[itemID] = (self.sessionItems[itemID] or 0) + 1
 
     -- Update item statistics
     if not Catfish.db.stats.items[itemID] then
@@ -67,37 +73,7 @@ function Statistics:RecordCatch(itemID)
     Catfish.db.stats.zones[zoneID].items[itemID] =
         Catfish.db.stats.zones[zoneID].items[itemID] + 1
 
-    -- Check for rare items (quality >= 4 = epic, 3 = rare)
-    if quality and quality >= 3 then
-        self:RecordRareCatch(itemID, timestamp, zoneID, subZone)
-    end
-
     Catfish:Debug("Recorded catch:", itemName, "Total:", Catfish.db.stats.total.catches)
-end
-
-function Statistics:RecordRareCatch(itemID, timestamp, zoneID, subZone)
-    if not Catfish.db.stats.rareCatches[itemID] then
-        Catfish.db.stats.rareCatches[itemID] = {}
-    end
-
-    local itemName = Catfish.API:GetItemName(itemID)
-    local quality = select(3, GetItemInfo(itemID))
-    local qualityName = self:GetQualityName(quality)
-
-    table.insert(Catfish.db.stats.rareCatches[itemID], {
-        timestamp = timestamp,
-        zoneID = zoneID,
-        subZone = subZone,
-    })
-
-    -- Announce rare catch
-    if quality >= 4 then
-        Catfish:Print("★ EPIC CATCH:", itemName, "at", subZone)
-        PlaySound(SOUNDKIT.RAID_WARNING, "Master")
-    else
-        Catfish:Print("★ Rare catch:", itemName, "at", subZone)
-        PlaySound(SOUNDKIT.IG_QUEST_COMPLETE, "Master")
-    end
 end
 
 -- ============================================
@@ -110,9 +86,10 @@ function Statistics:OnLootReady()
 
     for slot = 1, GetNumLootItems() do
         local lootType = GetLootSlotType(slot)
-        if lootType == LOOT_SLOT_ITEM then
-            local itemLink = GetLootSlotLink(slot)
-            local itemID = itemLink and self:ExtractItemID(itemLink)
+        local itemLink = GetLootSlotLink(slot)
+        -- lootType 1 = item (LOOT_SLOT_ITEM)
+        if lootType == 1 and itemLink then
+            local itemID = self:ExtractItemID(itemLink)
             if itemID then
                 local quantity = select(3, GetLootSlotInfo(slot)) or 1
                 self.currentLootItems[itemID] = (self.currentLootItems[itemID] or 0) + quantity
@@ -124,12 +101,50 @@ end
 function Statistics:OnLootClosed()
     -- Record all looted items
     for itemID, quantity in pairs(self.currentLootItems) do
+        -- Check quality once before recording
+        local quality = select(3, GetItemInfo(itemID))
+
+        -- Record the catch with quantity (for stats)
         for i = 1, quantity do
             self:RecordCatch(itemID)
+        end
+
+        -- Announce rare catch only once per item type
+        if quality and quality >= 3 then
+            self:AnnounceRareCatch(itemID, quantity)
         end
     end
 
     self.currentLootItems = {}
+end
+
+function Statistics:AnnounceRareCatch(itemID, quantity)
+    local itemName = Catfish.API:GetItemName(itemID)
+    local quality = select(3, GetItemInfo(itemID))
+    local subZone = Catfish.API:GetCurrentSubZone()
+    local zoneID = Catfish.API:GetZoneID()
+    local timestamp = time()
+
+    -- Record to rare catches
+    if not Catfish.db.stats.rareCatches[itemID] then
+        Catfish.db.stats.rareCatches[itemID] = {}
+    end
+
+    table.insert(Catfish.db.stats.rareCatches[itemID], {
+        timestamp = timestamp,
+        zoneID = zoneID,
+        subZone = subZone,
+    })
+
+    -- Announce once with quantity info
+    local quantityText = quantity > 1 and (" x" .. quantity) or ""
+    if quality >= 4 then
+        Catfish:Print("★ EPIC CATCH:", itemName, quantityText, "at", subZone)
+        PlaySound(8959) -- RAID_WARNING
+    else
+        Catfish:Print("★ Rare catch:", itemName, quantityText, "at", subZone)
+        PlaySound(8960) -- IG_QUEST_COMPLETE
+    end
 end
 
 function Statistics:ExtractItemID(link)
@@ -159,6 +174,14 @@ function Statistics:GetSessionTime()
         return GetTime() - Catfish.Core.sessionStartTime
     end
     return 0
+end
+
+function Statistics:GetSessionItems()
+    return self.sessionItems
+end
+
+function Statistics:RecordCast()
+    self.sessionCasts = self.sessionCasts + 1
 end
 
 function Statistics:GetItemStats(itemID)
@@ -261,6 +284,8 @@ end
 function Statistics:ResetSession()
     self.sessionCatches = 0
     self.sessionStartTime = 0
+    self.sessionCasts = 0
+    self.sessionItems = {}
 end
 
 -- ============================================
@@ -305,6 +330,8 @@ function Statistics:Init()
     self.sessionCatches = 0
     self.sessionStartTime = 0
     self.lastCatchTime = 0
+    self.sessionCasts = 0
+    self.sessionItems = {}
 
     Catfish:Debug("Statistics module initialized")
 end
