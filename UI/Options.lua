@@ -7,164 +7,17 @@ local Options = {}
 Catfish.UI.Options = Options
 
 Options.category = nil
-Options.keybindButton = nil
 
 -- Local reference to LibEQOL
 local SettingsLib = nil
 
--- ============================================
--- Keybinding Button Widget (Custom Implementation)
--- ============================================
-
-local function CreateKeybindingButton(parent, onSet, onGet)
-    local button = CreateFrame("Button", nil, parent)
-    button:SetSize(180, 24)
-
-    -- Button textures
-    local normalTexture = button:CreateTexture()
-    normalTexture:SetTexture("Interface\\Buttons\\UI-Panel-Button-Up")
-    normalTexture:SetTexCoord(0, 0.625, 0, 0.6875)
-    normalTexture:SetAllPoints()
-    button:SetNormalTexture(normalTexture)
-
-    local highlightTexture = button:CreateTexture()
-    highlightTexture:SetTexture("Interface\\Buttons\\UI-Panel-Button-Highlight")
-    highlightTexture:SetTexCoord(0, 0.625, 0, 0.6875)
-    highlightTexture:SetAllPoints()
-    button:SetHighlightTexture(highlightTexture)
-
-    local pushedTexture = button:CreateTexture()
-    pushedTexture:SetTexture("Interface\\Buttons\\UI-Panel-Button-Down")
-    pushedTexture:SetTexCoord(0, 0.625, 0, 0.6875)
-    pushedTexture:SetAllPoints()
-    button:SetPushedTexture(pushedTexture)
-
-    -- Button text
-    button.text = button:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    button.text:SetPoint("CENTER")
-    button:SetText(NOT_BOUND)
-
-    -- State
-    button.waitingForKey = false
-    button.currentKey = nil
-
-    -- Message frame for capture mode
-    local msgFrame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-    msgFrame:SetSize(400, 30)
-    msgFrame:SetBackdrop({
-        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        tile = true, tileSize = 16, edgeSize = 16,
-        insets = { left = 3, right = 3, top = 3, bottom = 3 }
-    })
-    msgFrame:SetBackdropColor(0, 0, 0, 1)
-    msgFrame:SetFrameStrata("FULLSCREEN_DIALOG")
-    msgFrame:SetFrameLevel(1000)
-    msgFrame:Hide()
-
-    local msgText = msgFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    msgText:SetPoint("CENTER")
-    msgText:SetText("按下按键设置快捷键，按ESC清除，点击按钮取消")
-    msgFrame:SetPoint("BOTTOM", button, "TOP", 0, 5)
-
-    button.msgFrame = msgFrame
-
-    function button:SetKey(key)
-        self.currentKey = key
-        if key and key ~= "" then
-            self.text:SetText(key)
-            self.text:SetTextColor(1, 1, 1)
-        else
-            self.text:SetText(NOT_BOUND)
-        end
-    end
-
-    function button:GetKey()
-        return self.currentKey
-    end
-
-    function button:StartCapture()
-        self.waitingForKey = true
-        self:EnableKeyboard(true)
-        self:SetPropagateKeyboardInput(false)
-        self.msgFrame:Show()
-        self:LockHighlight()
-    end
-
-    function button:StopCapture()
-        self.waitingForKey = false
-        self:EnableKeyboard(false)
-        self.msgFrame:Hide()
-        self:UnlockHighlight()
-    end
-
-    function button:UpdateDisplay()
-        if onGet then
-            self:SetKey(onGet())
-        end
-    end
-
-    button:SetScript("OnClick", function(self)
-        if self.waitingForKey then
-            self:StopCapture()
-        else
-            self:StartCapture()
-        end
-    end)
-
-    -- Ignore these modifier-only keys
-    local ignoreKeys = {
-        ["LSHIFT"] = true, ["RSHIFT"] = true,
-        ["LCTRL"] = true, ["RCTRL"] = true,
-        ["LALT"] = true, ["RALT"] = true,
-        ["UNKNOWN"] = true,
-    }
-
-    button:SetScript("OnKeyDown", function(self, key)
-        if not self.waitingForKey then return end
-
-        -- ESC clears the binding
-        if key == "ESCAPE" then
-            self:StopCapture()
-            self:SetKey(nil)
-            if onSet then onSet(nil) end
-            return
-        end
-
-        -- Ignore modifier-only keys
-        if ignoreKeys[key] then return end
-
-        -- Build the key string with modifiers
-        local keyStr = key
-        if IsShiftKeyDown() then
-            keyStr = "SHIFT-" .. keyStr
-        end
-        if IsControlKeyDown() then
-            keyStr = "CTRL-" .. keyStr
-        end
-        if IsAltKeyDown() then
-            keyStr = "ALT-" .. keyStr
-        end
-
-        self:StopCapture()
-
-        -- Try to set the keybind
-        if onSet then
-            local success = onSet(keyStr)
-            if success == false then
-                -- Failed to set, revert display
-                self:SetKey(self.currentKey)
-                return
-            end
-        end
-
-        self:SetKey(keyStr)
-    end)
-
-    button:EnableKeyboard(false)
-
-    return button
-end
+-- Ignore modifier-only keys for keybinding
+local ignoreKeys = {
+    ["BUTTON1"] = true, ["BUTTON2"] = true,
+    ["UNKNOWN"] = true,
+    ["LSHIFT"] = true, ["LCTRL"] = true, ["LALT"] = true,
+    ["RSHIFT"] = true, ["RCTRL"] = true, ["RALT"] = true,
+}
 
 -- ============================================
 -- Initialize Settings with LibEQOL
@@ -192,6 +45,13 @@ function Options:Init()
 
     -- Build all settings
     self:BuildSettings(cat)
+
+    -- Hook SettingsPanel close to exit keybind capture mode
+    if SettingsPanel then
+        SettingsPanel:HookScript("OnHide", function()
+            Options:OnClose()
+        end)
+    end
 
     Catfish:Debug("Options panel registered with LibEQOL")
 end
@@ -249,17 +109,54 @@ function Options:BuildSettings(cat)
         end,
     })
 
-    -- Keybind button
-    local currentKeybind = CatfishCharDB.keybinding or NOT_BOUND
-    SettingsLib:CreateButton(cat, {
+    -- Keybind button text function
+    local function GetKeybindText()
+        return CatfishCharDB.keybinding or NOT_BOUND
+    end
+
+    -- Store button initializer for text update
+    local keybindButton = SettingsLib:CreateButton(cat, {
         key = "oneKeyKeybind",
         label = "快捷键绑定",
-        text = currentKeybind,
+        text = GetKeybindText(),
         desc = "点击设置一键钓鱼的快捷键",
-        click = function()
-            Options:ShowKeybindDialog()
+        click = function(buttonFrame)
+            -- Suppress OnEditFocusLost for this click
+            Options._suppressFocusLost = true
+            -- Left-click only (LibEQOL doesn't pass button type)
+            -- Toggle capture mode
+            if Options:IsKeybindCaptureActive() then
+                Options:HideKeybindCapture()
+            else
+                Options:ShowKeybindCapture(buttonFrame)
+            end
         end,
     })
+
+    -- Hook InitFrame to capture the actual frame reference and handle right-click
+    if keybindButton and keybindButton.InitFrame then
+        local origInitFrame = keybindButton.InitFrame
+        keybindButton.InitFrame = function(self, frame, ...)
+            Options.keybindButtonFrame = frame
+            -- Enable right-click on the button
+            if frame.Button then
+                frame.Button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+                frame.Button:HookScript("PostClick", function(self, btn)
+                    if btn == "RightButton" then
+                        -- Right-click clears binding
+                        if Catfish.Modules.OneKey then
+                            Catfish.Modules.OneKey:SetKeybind(nil)
+                        end
+                        Options:UpdateKeybindButtonText()
+                        Options:HideKeybindCapture()
+                    end
+                end)
+            end
+            return origInitFrame(self, frame, ...)
+        end
+    end
+
+    self.keybindButtonInit = keybindButton
 
     -- Double-Click Mode Checkbox
     SettingsLib:CreateCheckbox(cat, {
@@ -450,53 +347,100 @@ function Options:BuildSettings(cat)
 end
 
 -- ============================================
--- Keybind Dialog
+-- Keybind Capture
 -- ============================================
 
-function Options:StartKeybindCapture()
-    -- Create or show capture frame
-    if not self.captureFrame then
-        self:CreateCaptureFrame()
-    end
-    self.captureFrame:Show()
-    self.captureFrame:SetFocus()
+-- Check if keybind capture mode is active
+function Options:IsKeybindCaptureActive()
+    return self.keybindCapture and self.keybindCapture:IsShown()
 end
 
-function Options:CreateCaptureFrame()
-    -- Create a full-screen transparent frame to capture key input
+-- Hide keybind capture and reset button highlight
+function Options:HideKeybindCapture()
+    if self.keybindCapture then
+        self.keybindCapture:Hide()
+        self.keybindCapture:ClearFocus()
+    end
+    -- Reset button highlight
+    self:SetButtonHighlight(false)
+end
+
+-- Flag to prevent OnEditFocusLost from hiding during button click
+Options._suppressFocusLost = false
+
+-- Set button highlight state
+function Options:SetButtonHighlight(highlight)
+    local frame = self.keybindButtonFrame
+    if frame and frame.Button then
+        if highlight then
+            -- Lock button in highlight state
+            frame.Button:LockHighlight()
+        else
+            -- Unlock button highlight
+            frame.Button:UnlockHighlight()
+        end
+    end
+end
+
+function Options:ShowKeybindCapture(buttonFrame)
+    if not self.keybindCapture then
+        self:CreateKeybindCapture()
+    end
+
+    -- Set button highlight
+    self:SetButtonHighlight(true)
+
+    self.keybindCapture:Show()
+    self.keybindCapture:SetFocus()
+
+    -- Position hint box above the button (after Show for proper rendering)
+    if buttonFrame and self.keybindCapture.hintBox then
+        local hintBox = self.keybindCapture.hintBox
+        hintBox:ClearAllPoints()
+        hintBox:SetPoint("BOTTOM", buttonFrame, "TOP", 0, 10)
+        hintBox:Show()
+    end
+end
+
+function Options:CreateKeybindCapture()
+    -- Create a frame to capture key input
     local frame = CreateFrame("EditBox", "CatfishKeybindCapture", UIParent)
-    frame:SetAllPoints(UIParent)
+    frame:SetSize(1, 1)  -- Minimal size, invisible
+    frame:SetPoint("CENTER")
     frame:SetFrameStrata("FULLSCREEN_DIALOG")
     frame:SetFrameLevel(1000)
-    frame:EnableMouse(true)
     frame:SetAutoFocus(false)
 
-    -- Visual hint
-    local hint = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    hint:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-    hint:SetText("按下按键设置快捷键，按ESC清除")
+    -- Hint box positioned above the button (simplified content)
+    local hintBox = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+    hintBox:SetSize(320, 35)
+    hintBox:SetFrameStrata("FULLSCREEN_DIALOG")
+    hintBox:SetFrameLevel(1001)
+    hintBox:SetBackdrop({
+        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true, tileSize = 16, edgeSize = 16,
+        insets = { left = 4, right = 4, top = 4, bottom = 4 }
+    })
+    hintBox:SetBackdropColor(0.1, 0.1, 0.1, 0.95)
+    hintBox:SetBackdropBorderColor(0.4, 0.6, 0.8)
+    hintBox:Hide()
 
-    local bg = frame:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(0, 0, 0, 0.3)
+    -- Single instruction line
+    local hint = hintBox:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    hint:SetPoint("CENTER", hintBox, "CENTER", 0, 0)
+    hint:SetText("按下按键设置，ESC取消，右键清除绑定")
 
-    -- Ignore modifier-only keys
-    local ignoreKeys = {
-        ["LSHIFT"] = true, ["RSHIFT"] = true,
-        ["LCTRL"] = true, ["RCTRL"] = true,
-        ["LALT"] = true, ["RALT"] = true,
-        ["UNKNOWN"] = true,
-    }
+    frame.hintBox = hintBox
 
+    -- OnKeyDown handler
     frame:SetScript("OnKeyDown", function(self, key)
-        -- ESC clears the binding
+        -- ESC cancels the binding mode (does NOT clear the binding)
         if key == "ESCAPE" then
-            if Catfish.Modules.OneKey then
-                Catfish.Modules.OneKey:SetKeybind(nil)
-            end
+            self.hintBox:Hide()
             self:Hide()
             self:ClearFocus()
-            Options:RefreshKeybindButton()
+            Options:SetButtonHighlight(false)
             return
         end
 
@@ -520,98 +464,68 @@ function Options:CreateCaptureFrame()
             Catfish.Modules.OneKey:SetKeybind(keyStr)
         end
 
+        self.hintBox:Hide()
         self:Hide()
         self:ClearFocus()
-        Options:RefreshKeybindButton()
+        -- Update button display and reset highlight
+        Options:UpdateKeybindButtonText()
+        Options:SetButtonHighlight(false)
+    end)
+
+    -- Show hint box when frame is shown
+    frame:SetScript("OnShow", function(self)
+        self.hintBox:Show()
+    end)
+
+    frame:SetScript("OnHide", function(self)
+        self.hintBox:Hide()
     end)
 
     frame:SetScript("OnEditFocusLost", function(self)
-        self:Hide()
+        -- Skip if suppressed (button click is handling this)
+        if Options._suppressFocusLost then
+            Options._suppressFocusLost = false
+            return
+        end
+        Options:HideKeybindCapture()
     end)
 
-    frame:SetScript("OnMouseDown", function(self, button)
-        -- Cancel on mouse click
-        self:Hide()
-        self:ClearFocus()
+    -- Right-click on hint box clears binding
+    hintBox:SetScript("OnMouseDown", function(self, button)
+        if button == "RightButton" then
+            if Catfish.Modules.OneKey then
+                Catfish.Modules.OneKey:SetKeybind(nil)
+            end
+            Options:UpdateKeybindButtonText()
+        end
+        Options:HideKeybindCapture()
     end)
 
-    self.captureFrame = frame
+    self.keybindCapture = frame
 end
 
-function Options:ShowKeybindDialog()
-    if not self.keybindDialog then
-        self:CreateKeybindDialog()
+-- Update the keybind button text to reflect current binding
+function Options:UpdateKeybindButtonText()
+    local newText = CatfishCharDB.keybinding or NOT_BOUND
+
+    -- Update initializer data
+    if self.keybindButtonInit and self.keybindButtonInit.data then
+        self.keybindButtonInit.data.text = newText
     end
-    self.keybindDialog:Show()
-    if self.keybindButton then
-        self.keybindButton:UpdateDisplay()
+
+    -- Update the button text FontString directly
+    if self.keybindButtonFrame then
+        local frame = self.keybindButtonFrame
+        -- The button frame should have a Button child with Text
+        if frame.Button and frame.Button.Text then
+            frame.Button.Text:SetText(newText)
+        end
     end
-end
 
-function Options:CreateKeybindDialog()
-    -- Create a simple dialog frame
-    local dialog = CreateFrame("Frame", "CatfishKeybindDialog", UIParent, "BackdropTemplate")
-    dialog:SetSize(350, 120)
-    dialog:SetPoint("CENTER")
-    dialog:SetBackdrop({
-        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        tile = true, tileSize = 16, edgeSize = 16,
-        insets = { left = 4, right = 4, top = 4, bottom = 4 }
-    })
-    dialog:SetBackdropColor(0, 0, 0, 1)
-    dialog:SetFrameStrata("DIALOG")
-    dialog:SetFrameLevel(100)
-    dialog:EnableMouse(true)
-    dialog:SetMovable(true)
-    dialog:RegisterForDrag("LeftButton")
-    dialog:SetScript("OnDragStart", dialog.StartMoving)
-    dialog:SetScript("OnDragStop", dialog.StopMovingOrSizing)
-    dialog:Hide()
-
-    -- Title
-    local title = dialog:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("TOP", dialog, "TOP", 0, -10)
-    title:SetText("设置一键钓鱼快捷键")
-
-    -- Close on escape
-    dialog:SetScript("OnKeyDown", function(self, key)
-        if key == "ESCAPE" then
-            self:Hide()
-        end
-    end)
-    dialog:SetPropagateKeyboardInput(true)
-
-    -- Close button
-    local closeBtn = CreateFrame("Button", nil, dialog, "UIPanelCloseButton")
-    closeBtn:SetPoint("TOPRIGHT", dialog, "TOPRIGHT", -2, -2)
-
-    self.keybindDialog = dialog
-
-    -- Create keybind button
-    self.keybindButton = CreateKeybindingButton(
-        dialog,
-        function(key)
-            if Catfish.Modules.OneKey then
-                local success = Catfish.Modules.OneKey:SetKeybind(key)
-                return success
-            end
-            return false
-        end,
-        function()
-            if Catfish.Modules.OneKey then
-                return Catfish.Modules.OneKey:GetKeybind()
-            end
-            return nil
-        end
-    )
-    self.keybindButton:SetPoint("CENTER", dialog, "CENTER", 0, -10)
-    self.keybindButton:UpdateDisplay()
-
-    -- Instructions
-    local hint = dialog:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    hint:SetPoint("BOTTOM", dialog, "BOTTOM", 0, 10)
-    hint:SetText("按ESC清除快捷键")
+    -- Refresh the settings panel
+    if SettingsPanel and SettingsPanel.RepairDisplay then
+        SettingsPanel:RepairDisplay()
+    end
 end
 
 -- ============================================
@@ -624,15 +538,13 @@ function Options:Open()
     end
     if self.category then
         Settings.OpenToCategory(self.category:GetID())
+        -- Update keybind button text when opening settings
+        self:UpdateKeybindButtonText()
     end
 end
 
--- ============================================
--- Refresh Keybind Button Display
--- ============================================
-
-function Options:RefreshKeybindButton()
-    if self.keybindButton then
-        self.keybindButton:UpdateDisplay()
-    end
+-- Called when settings panel is closed
+function Options:OnClose()
+    -- Exit keybind capture mode if active
+    self:HideKeybindCapture()
 end
