@@ -216,6 +216,11 @@ function Core:StartFishing()
         Catfish.Modules.Toys:UseConfiguredToys()
     end
 
+    -- Use The War Within items (阿曼尼垂钓者的结界, 鱼饵) if enabled
+    if Catfish.Modules.TWWItems then
+        Catfish.Modules.TWWItems:UseAllConfiguredItems()
+    end
+
     -- Check if Gigantic Bobber buff is already active
     local giganticBobberActive = Catfish.API:UnitHasBuff("player", GIGANTIC_BOBBER_BUFF_ID)
     Catfish:Debug("Gigantic Bobber active:", giganticBobberActive)
@@ -375,9 +380,9 @@ function Core:OnSpellCastStart(unit, castGUID, spellID)
         Catfish.Modules.Toys:UseConfiguredToys()
     end
 
-    -- NOTE: Gigantic Bobber is handled by the keybinding system in OneKey.lua
-    -- We cannot auto-use toys from event handlers as it requires a hardware event.
-    -- The binding is set up to use the toy when the player presses the key.
+    -- NOTE: TWW items (Amani Ward, baits) are handled by the keybinding system in OneKey.lua
+    -- We cannot auto-use items from event handlers as it requires a hardware event.
+    -- The binding is set up to use items when the player presses the key.
 
     self:SetState(State.CASTING)
 end
@@ -411,9 +416,9 @@ function Core:OnSpellCastChannelStart(unit, castGUID, spellID)
         Catfish.Modules.Toys:UseConfiguredToys()
     end
 
-    -- NOTE: Gigantic Bobber is handled by the keybinding system in OneKey.lua
-    -- We cannot auto-use toys from event handlers as it requires a hardware event.
-    -- The binding is set up to use the toy when the player presses the key.
+    -- NOTE: TWW items (Amani Ward, baits) are handled by the keybinding system in OneKey.lua
+    -- We cannot auto-use items from event handlers as it requires a hardware event.
+    -- The binding is set up to use items when the player presses the key.
 
     -- Transition to waiting when channel starts (bobber is in water)
     self:SetState(State.WAITING)

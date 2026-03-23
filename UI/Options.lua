@@ -360,6 +360,44 @@ function Options:BuildSettings(cat)
         get = function() return db.treasureChestSound ~= false end,
         set = function(value) db.treasureChestSound = value end,
     })
+
+    -- Amani Fisher's Ward
+    SettingsLib:CreateCheckbox(cat, {
+        key = "useAmaniWard",
+        name = "阿曼尼垂钓者的结界",
+        desc = "抛竿前自动使用阿曼尼垂钓者的结界（需要背包中有该物品，且身上没有对应Buff）",
+        default = db.tww and db.tww.useAmaniWard or false,
+        get = function() return db.tww and db.tww.useAmaniWard or false end,
+        set = function(value)
+            db.tww = db.tww or {}
+            db.tww.useAmaniWard = value
+        end,
+    })
+
+    -- Auto Bait Dropdown
+    SettingsLib:CreateDropdown(cat, {
+        key = "selectedBait",
+        name = "自动上饵",
+        desc = "抛竿前自动使用选中的鱼饵（需要背包中有该物品，且身上没有对应Buff）",
+        varType = Settings.VarType.String,
+        default = db.tww and db.tww.selectedBait or "",
+        get = function() return db.tww and db.tww.selectedBait or "" end,
+        set = function(value)
+            db.tww = db.tww or {}
+            if value and value ~= "" then
+                db.tww.selectedBait = value
+            else
+                db.tww.selectedBait = nil
+            end
+        end,
+        optionfunc = function()
+            return {
+                [""] = "无",
+                ["fortune"] = "好运神灵鱼诱饵",
+                ["octopus"] = "不祥章鱼诱饵",
+            }
+        end,
+    })
 end
 
 -- ============================================

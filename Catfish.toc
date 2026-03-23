@@ -31,6 +31,7 @@ Modules\Toys.lua
 Modules\Statistics.lua
 Modules\LureManager.lua
 Modules\SoundManager.lua
+Modules\TWWItems.lua
 
 # UI
 UI\MinimapButton.lua

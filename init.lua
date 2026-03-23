@@ -29,6 +29,11 @@ local DEFAULT_DB = {
     showStatsHUD = true,  -- 显示统计 HUD
     statsOnlyFish = true,  -- 只统计鱼类
     treasureChestSound = true,  -- 宝箱出现时播放提示音
+    -- 至暗之夜设置
+    tww = {
+        useAmaniWard = false,  -- 阿曼尼垂钓者的结界
+        selectedBait = nil,  -- 选择的鱼饵 (nil/"fortune"/"octopus")
+    },
     stats = {
         total = {
             catches = 0,
@@ -226,6 +231,9 @@ frame:SetScript("OnEvent", function(self, event, arg1, ...)
         end
         if Catfish.Modules.SoundManager then
             Catfish.Modules.SoundManager:Init()
+        end
+        if Catfish.Modules.TWWItems then
+            Catfish.Modules.TWWItems:Init()
         end
 
         -- Initialize UI

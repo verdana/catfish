@@ -236,6 +236,75 @@ local function NeedsGiganticBobber()
     return true
 end
 
+-- ============================================
+-- The War Within Items Support
+-- ============================================
+
+local TWW_ITEMS = {
+    amaniWard = { itemID = 241148, buffSpellID = 1237919 },
+    fortuneBait = { itemID = 241145, buffSpellID = 1237964 },
+    octopusBait = { itemID = 241149, buffSpellID = 1237965 },
+}
+
+-- Check if we need to use Amani Ward
+local function NeedsAmaniWard()
+    if not Catfish.db.tww or not Catfish.db.tww.useAmaniWard then
+        return false
+    end
+
+    -- Check if player already has the buff
+    if Catfish.API:UnitHasBuff("player", TWW_ITEMS.amaniWard.buffSpellID) then
+        return false
+    end
+
+    -- Check if player has the item
+    if not Catfish.API:PlayerHasItem(TWW_ITEMS.amaniWard.itemID) then
+        return false
+    end
+
+    return true
+end
+
+-- Check if we need to use selected bait
+local function NeedsTWWBait()
+    if not Catfish.db.tww or not Catfish.db.tww.selectedBait then
+        return false
+    end
+
+    local baitKey = Catfish.db.tww.selectedBait
+    local baitData = TWW_ITEMS[baitKey .. "Bait"]
+    if not baitData then
+        return false
+    end
+
+    -- Check if player already has the buff
+    if Catfish.API:UnitHasBuff("player", baitData.buffSpellID) then
+        return false
+    end
+
+    -- Check if player has the item
+    if not Catfish.API:PlayerHasItem(baitData.itemID) then
+        return false
+    end
+
+    return true
+end
+
+-- Get TWW bait item name
+local function GetTWWBaitName()
+    if not Catfish.db.tww or not Catfish.db.tww.selectedBait then
+        return nil
+    end
+
+    local baitKey = Catfish.db.tww.selectedBait
+    local baitData = TWW_ITEMS[baitKey .. "Bait"]
+    if not baitData then
+        return nil
+    end
+
+    return Catfish.API:GetItemName(baitData.itemID)
+end
+
 -- Check if any swim toy is needed
 local function NeedsSwimToys()
     return IsSwimming() and (NeedsRaft() or NeedsGiganticBobber() or NeedsCustomBobber())
@@ -432,6 +501,49 @@ function OneKey:UpdateBinding(skipCooldownCheck)
                     Catfish:Debug("OneKey: Bound to fishing spell (custom bobber fallback):", spellName)
                 end
             end
+        elseif NeedsAmaniWard() or NeedsTWWBait() then
+            -- Use The War Within items before fishing
+            -- These are consumables that trigger GCD, so we need to use them first
+            -- then wait for next keypress to cast fishing
+            local macroLines = {}
+
+            -- Build item usage only (no fishing cast - will be added after GCD)
+            if NeedsAmaniWard() then
+                local itemName = Catfish.API:GetItemName(TWW_ITEMS.amaniWard.itemID)
+                if itemName then
+                    table.insert(macroLines, "/use " .. itemName)
+                    Catfish:Debug("OneKey: TWW binding - adding Amani Ward:", itemName)
+                end
+            end
+
+            if NeedsTWWBait() then
+                local baitName = GetTWWBaitName()
+                if baitName then
+                    table.insert(macroLines, "/use " .. baitName)
+                    Catfish:Debug("OneKey: TWW binding - adding bait:", baitName)
+                end
+            end
+
+            if #macroLines > 0 then
+                local macroText = table.concat(macroLines, "\n")
+                Catfish.API:SetToyButtonMacro(macroText)
+                SetOverrideBindingClick(self.autoButton, true, normalizedKey, "CatfishToyButton")
+                Catfish:Debug("OneKey: Bound to TWW items (use only, then wait for GCD)")
+
+                -- Schedule binding update after GCD (~1.5s) to switch to fishing
+                C_Timer.After(1.5, function()
+                    if not InCombatLockdown() then
+                        self:UpdateBinding()
+                    end
+                end)
+            else
+                -- Fall back to fishing spell
+                local spellName = GetFishingSpellName()
+                if spellName then
+                    SetOverrideBindingSpell(self.autoButton, true, normalizedKey, spellName)
+                    Catfish:Debug("OneKey: Bound to fishing spell (TWW fallback):", spellName)
+                end
+            end
         else
             -- Bind to fishing spell directly
             local spellName = GetFishingSpellName()
@@ -592,6 +704,40 @@ function OneKey:GetSwimFishingMacro()
     table.insert(macroLines, "/cast " .. spellName)
 
     return table.concat(macroLines, "\n")
+end
+
+-- ============================================
+-- The War Within Items Macro Generation
+-- ============================================
+
+function OneKey:GetTWWFishingMacro()
+    local macroLines = {}
+    local spellName = GetFishingSpellName() or "钓鱼"
+
+    -- Use Amani Ward if needed
+    if NeedsAmaniWard() then
+        local itemName = Catfish.API:GetItemName(TWW_ITEMS.amaniWard.itemID)
+        if itemName then
+            table.insert(macroLines, "/use " .. itemName)
+            Catfish:Debug("OneKey: TWW macro - adding Amani Ward:", itemName)
+        end
+    end
+
+    -- Use selected bait if needed
+    if NeedsTWWBait() then
+        local baitName = GetTWWBaitName()
+        if baitName then
+            table.insert(macroLines, "/use " .. baitName)
+            Catfish:Debug("OneKey: TWW macro - adding bait:", baitName)
+        end
+    end
+
+    -- Cast fishing
+    table.insert(macroLines, "/cast " .. spellName)
+
+    local macroText = table.concat(macroLines, "\n")
+    Catfish:Debug("OneKey: TWW macro generated:", #macroLines, "lines")
+    return macroText
 end
 
 -- ============================================
