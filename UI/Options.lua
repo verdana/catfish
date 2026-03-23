@@ -345,11 +345,17 @@ function Options:BuildSettings(cat)
         set = function(value) db.debugMode = value end,
     })
 
-    -- Treasure Chest Sound
+    -- ============================================
+    -- The War Within Section (至暗之夜)
+    -- ============================================
+
+    SettingsLib:CreateHeader(cat, "至暗之夜")
+
+    -- Treasure Chest Sound (The War Within feature)
     SettingsLib:CreateCheckbox(cat, {
         key = "treasureChestSound",
         name = "宝箱出现提示音",
-        desc = "钓鱼时出现藏宝箱时播放提示音",
+        desc = "钓鱼时出现藏宝箱时播放提示音（至暗之夜版本功能）",
         default = db.treasureChestSound or true,
         get = function() return db.treasureChestSound ~= false end,
         set = function(value) db.treasureChestSound = value end,
