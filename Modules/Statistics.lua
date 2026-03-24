@@ -17,6 +17,11 @@ Statistics.sessionItems = {} -- 会话物品统计
 Statistics.pendingLoot = {}
 Statistics.currentLootItems = {}
 
+-- Flag to track if current loot is from fishing
+-- Set when entering WAITING state, cleared after loot is processed or timeout
+Statistics.isFishingLoot = false
+Statistics.fishingLootTimeout = nil
+
 -- ============================================
 -- Catch Recording
 -- ============================================
@@ -81,6 +86,13 @@ end
 -- ============================================
 
 function Statistics:OnLootReady()
+    -- Only track fishing loot (flag is set in Core:EnterWaiting)
+    if not self.isFishingLoot then
+        return
+    end
+
+    Catfish:Debug("Statistics: Tracking fishing loot")
+
     -- Track what we're about to loot
     self.currentLootItems = {}
 
@@ -99,6 +111,12 @@ function Statistics:OnLootReady()
 end
 
 function Statistics:OnLootClosed()
+    -- Only record if this was fishing loot
+    if not self.isFishingLoot then
+        self.currentLootItems = {}
+        return
+    end
+
     -- Record all looted items
     for itemID, quantity in pairs(self.currentLootItems) do
         -- Check quality once before recording
@@ -115,7 +133,53 @@ function Statistics:OnLootClosed()
         end
     end
 
+    -- Clear loot tracking
     self.currentLootItems = {}
+    self.isFishingLoot = false
+end
+
+-- Called when entering WAITING state (bobber in water)
+function Statistics:OnFishingStarted()
+    -- Cancel any existing timeout
+    if self.fishingLootTimeout then
+        self.fishingLootTimeout:Cancel()
+    end
+
+    self.isFishingLoot = true
+    Catfish:Debug("Statistics: Fishing started, loot flag set")
+
+    -- Set a timeout to clear the flag after 30 seconds (safety)
+    -- This handles cases where fishing is cancelled without proper cleanup
+    self.fishingLootTimeout = C_Timer.NewTimer(30, function()
+        if self.isFishingLoot then
+            Catfish:Debug("Statistics: Fishing loot flag timeout - clearing")
+            self.isFishingLoot = false
+            self.fishingLootTimeout = nil
+        end
+    end)
+end
+
+-- Called when entering IDLE state (fishing ended or cancelled)
+function Statistics:OnFishingEnded()
+    -- Cancel any existing timeout
+    if self.fishingLootTimeout then
+        self.fishingLootTimeout:Cancel()
+        self.fishingLootTimeout = nil
+    end
+
+    self.isFishingLoot = false
+    Catfish:Debug("Statistics: Fishing ended, loot flag cleared")
+end
+
+-- Called when player reels in (enters REELING state) - backup
+function Statistics:OnFishingReelStart()
+    -- Cancel any existing timeout
+    if self.fishingLootTimeout then
+        self.fishingLootTimeout:Cancel()
+    end
+
+    self.isFishingLoot = true
+    Catfish:Debug("Statistics: Reeling started, loot flag set")
 end
 
 function Statistics:AnnounceRareCatch(itemID, quantity)
@@ -343,6 +407,8 @@ function Statistics:Init()
     self.lastCatchTime = 0
     self.sessionCasts = 0
     self.sessionItems = {}
+    self.isFishingLoot = false
+    self.fishingLootTimeout = nil
 
     Catfish:Debug("Statistics module initialized")
 end

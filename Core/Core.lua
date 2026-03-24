@@ -124,6 +124,11 @@ function Core:EnterIdle()
     -- Clear bobber data
     self.bobberGUID = nil
     self.bobberUnit = nil
+
+    -- Note: Don't clear isFishingLoot here
+    -- It will be cleared by:
+    -- 1. Statistics:OnLootClosed (after looting)
+    -- 2. Statistics:ClearFishingLootTimeout (timeout after 5 seconds)
 end
 
 function Core:ExitIdle()
@@ -161,6 +166,11 @@ function Core:EnterWaiting(bobberGUID)
     Catfish:Debug("Entered WAITING state, bobber:", bobberGUID)
 
     self.bobberGUID = bobberGUID
+
+    -- Mark that we're fishing - loot should be recorded
+    if Catfish.Modules.Statistics then
+        Catfish.Modules.Statistics:OnFishingStarted()
+    end
 end
 
 function Core:ExitWaiting()
@@ -173,6 +183,11 @@ end
 
 function Core:EnterReeling()
     Catfish:Debug("Entered REELING state")
+
+    -- Mark that this is a fishing loot session
+    if Catfish.Modules.Statistics then
+        Catfish.Modules.Statistics:OnFishingReelStart()
+    end
 
     -- Interact with bobber using secure button
     Catfish.API:InteractWithSoftTarget()
@@ -350,6 +365,8 @@ function Core:UseBobberToy()
 end
 
 function Core:CancelFishing()
+    Catfish:Debug("CancelFishing called, state:", self.currentState)
+
     if self.currentState == State.CASTING or self.currentState == State.WAITING then
         self:SetState(State.IDLE)
     end
@@ -428,8 +445,11 @@ function Core:OnSpellCastChannelStop(unit, castGUID, spellID)
     if unit ~= "player" then return end
     if not Catfish.API:IsFishingSpell(spellID) then return end
 
-    -- Channel stopped - either caught something or cancelled
+    -- Channel stopped
+    -- Don't clear isFishingLoot here - LOOT_READY may come after
+    -- The flag is cleared in Statistics:OnLootClosed instead
     if self.currentState == State.WAITING then
+        Catfish:Debug("Channel stopped in WAITING - transitioning to IDLE")
         self:SetState(State.IDLE)
     end
 end

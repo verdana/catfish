@@ -154,6 +154,11 @@ function Events.CHAT_MSG_LOOT(message, playerName, languageName, channelName, pl
 end
 
 function Events:ParseLootMessage(message)
+    -- Only record if this was fishing loot
+    if not Catfish.Modules.Statistics or not Catfish.Modules.Statistics.isFishingLoot then
+        return
+    end
+
     -- Pattern: "You receive loot: [|Hitem:...|h[Item Name]|h]"
     local itemLink = message:match("|c%x+|Hitem:.-|h%[(.-)%]|h|r")
     if itemLink then
@@ -163,9 +168,7 @@ function Events:ParseLootMessage(message)
             Catfish:Debug("Looted item:", itemID)
 
             -- Record statistics
-            if Catfish.Modules.Statistics then
-                Catfish.Modules.Statistics:RecordCatch(itemID)
-            end
+            Catfish.Modules.Statistics:RecordCatch(itemID)
         end
     end
 end
