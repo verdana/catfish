@@ -194,7 +194,7 @@ function MinimapButton:OnEnter()
         local catches = Catfish.Modules.Statistics:GetSessionCatches()
         local time = Catfish.Modules.Statistics:GetSessionTime()
         GameTooltip:AddDoubleLine("本次钓获:", catches, 1, 1, 1)
-        GameTooltip:AddDoubleLine("钓鱼时间:", FormatTime(time), 1, 1, 1)
+        GameTooltip:AddDoubleLine("钓鱼时间:", Catfish.Modules.Statistics:FormatTime(time), 1, 1, 1)
     end
 
     GameTooltip:AddLine(" ")
@@ -203,20 +203,6 @@ function MinimapButton:OnEnter()
     GameTooltip:AddLine("|cFFFFFF00右键|r 切换激活/休眠", 0.7, 0.7, 0.7)
 
     GameTooltip:Show()
-end
-
--- Helper function
-function FormatTime(seconds)
-    if not seconds or seconds <= 0 then
-        return "0m"
-    end
-    local hours = math.floor(seconds / 3600)
-    local minutes = math.floor((seconds % 3600) / 60)
-    if hours > 0 then
-        return string.format("%dh %dm", hours, minutes)
-    else
-        return string.format("%dm", minutes)
-    end
 end
 
 -- ============================================

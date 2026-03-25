@@ -62,6 +62,7 @@ local DEFAULT_CHAR_DB = {
         minimapPos = 45,
     },
     keybinding = nil,
+    hudPosition = nil,  -- { point, x, y } for StatsHUD
 }
 
 -- Main frame for event handling
@@ -214,6 +215,9 @@ frame:SetScript("OnEvent", function(self, event, arg1, ...)
         if Catfish.Modules.OneKey then
             Catfish.Modules.OneKey:Init()
         end
+        if Catfish.Modules.ItemManager then
+            Catfish.Modules.ItemManager:Init()
+        end
         if Catfish.Modules.DoubleClick then
             Catfish.Modules.DoubleClick:Init()
         end
@@ -267,7 +271,7 @@ frame:SetScript("OnEvent", function(self, event, arg1, ...)
         end)
         if success and fishingSpell then
             Catfish.hasFishingSkill = true
-            Catfish:Debug("Fishing skill found:", fishingSpell)
+            -- Catfish:Debug("Fishing skill found:", fishingSpell)
         else
             Catfish.hasFishingSkill = false
             Catfish:Debug("No fishing skill detected (or spell data not loaded yet)")
@@ -281,7 +285,7 @@ frame:SetScript("OnEvent", function(self, event, arg1, ...)
         -- Update OneKey binding after a short delay to allow item data to load
         C_Timer.After(1.0, function()
             if Catfish.Modules.OneKey then
-                Catfish.Modules.OneKey:UpdateBinding()
+                Catfish.Modules.OneKey:UpdateBinding(0)
             end
         end)
 

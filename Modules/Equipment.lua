@@ -297,7 +297,7 @@ end
 
 function Equipment:OnInventoryChanged()
     -- Equipment changed
-    Catfish:Debug("Inventory changed")
+    -- Catfish:Debug("Inventory changed")
 end
 
 -- ============================================

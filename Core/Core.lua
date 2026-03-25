@@ -68,6 +68,7 @@ function Core:SetState(newState, ...)
 
     -- Notify OneKey module to update binding
     if Catfish.Modules.OneKey then
+        Catfish:Debug("-> Core:SetState, newState = ", newState)
         Catfish.Modules.OneKey:OnStateChanged()
     end
 end
@@ -237,7 +238,8 @@ function Core:StartFishing()
     end
 
     -- Check if Gigantic Bobber buff is already active
-    local giganticBobberActive = Catfish.API:UnitHasBuff("player", GIGANTIC_BOBBER_BUFF_ID)
+    local GIGANTIC_BOBBER = Catfish.Data.Constants.GIGANTIC_BOBBER
+    local giganticBobberActive = Catfish.API:UnitHasBuff("player", GIGANTIC_BOBBER.BUFF_ID)
     Catfish:Debug("Gigantic Bobber active:", giganticBobberActive)
     Catfish:Debug("useGiganticBobber setting:", Catfish.db.useGiganticBobber)
     Catfish:Debug("selectedBobberToy:", Catfish.db.selectedBobberToy)
@@ -298,31 +300,29 @@ end
 -- Gigantic Bobber
 -- ============================================
 
-local GIGANTIC_BOBBER_BUFF_ID = 397827
-local GIGANTIC_BOBBER_TOY_ID = 202207
-
 function Core:UseGiganticBobber()
+    local GIGANTIC_BOBBER = Catfish.Data.Constants.GIGANTIC_BOBBER
     Catfish:Print("=== Gigantic Bobber Debug ===")
     Catfish:Print("useGiganticBobber setting:", Catfish.db.useGiganticBobber and "enabled" or "disabled")
 
     -- Check if player already has the buff
-    local hasBuff = Catfish.API:UnitHasBuff("player", GIGANTIC_BOBBER_BUFF_ID)
-    Catfish:Print("Has buff (397827):", hasBuff and "YES" or "NO")
+    local hasBuff = Catfish.API:UnitHasBuff("player", GIGANTIC_BOBBER.BUFF_ID)
+    Catfish:Print("Has buff (" .. GIGANTIC_BOBBER.BUFF_ID .. "):", hasBuff and "YES" or "NO")
     if hasBuff then
         Catfish:Print("Already has Gigantic Bobber buff - skipping")
         return false
     end
 
     -- Check if player has the toy
-    local hasToy = Catfish.API:PlayerHasToy(GIGANTIC_BOBBER_TOY_ID)
-    Catfish:Print("Has toy (202207):", hasToy and "YES" or "NO")
+    local hasToy = Catfish.API:PlayerHasToy(GIGANTIC_BOBBER.TOY_ID)
+    Catfish:Print("Has toy (" .. GIGANTIC_BOBBER.TOY_ID .. "):", hasToy and "YES" or "NO")
     if not hasToy then
         Catfish:Print("Player does not have Gigantic Bobber toy")
         return false
     end
 
     -- Check if toy is on cooldown
-    local cooldown = Catfish.API:GetToyCooldown(GIGANTIC_BOBBER_TOY_ID)
+    local cooldown = Catfish.API:GetToyCooldown(GIGANTIC_BOBBER.TOY_ID)
     Catfish:Print("Toy cooldown:", cooldown)
     if cooldown > 0 then
         Catfish:Print("Gigantic Bobber toy on cooldown:", cooldown, "seconds")
@@ -331,7 +331,7 @@ function Core:UseGiganticBobber()
 
     -- Use the toy
     Catfish:Print("Attempting to use Gigantic Bobber toy...")
-    local result = Catfish.API:UseToy(GIGANTIC_BOBBER_TOY_ID)
+    local result = Catfish.API:UseToy(GIGANTIC_BOBBER.TOY_ID)
     Catfish:Print("UseToy result:", result and "SUCCESS" or "FAILED")
     return result
 end
@@ -472,6 +472,7 @@ function Core:OnSoftInteractChanged(newTarget, oldTarget)
 
     -- Notify OneKey module to update binding (soft target changed)
     if Catfish.Modules.OneKey then
+        Catfish:Debug("-> Core:OnSoftInteractChanged, newTarget = ", newTarget)
         Catfish.Modules.OneKey:OnStateChanged()
     end
 end

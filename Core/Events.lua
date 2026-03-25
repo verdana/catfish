@@ -84,21 +84,23 @@ function Events.UNIT_SPELLCAST_INTERRUPTED(unit, castGUID, spellID)
     end
 end
 
--- Giant Bobber toy constants
-local GIGANTIC_BOBBER_BUFF_ID = 397827
-local GIGANTIC_BOBBER_TOY_ID = 202207
+-- Giant Bobber toy constants (now in Data/Constants.lua)
+local function GetGiganticBobberConst()
+    return Catfish.Data.Constants.GIGANTIC_BOBBER
+end
 
 function Events.UNIT_SPELLCAST_SUCCEEDED(unit, castGUID, spellID)
     if unit ~= "player" then return end
 
+    local GIGANTIC_BOBBER = GetGiganticBobberConst()
     -- Check for Gigantic Bobber buff application
     -- The toy applies a buff with spellID 397827
-    if spellID == GIGANTIC_BOBBER_BUFF_ID then
+    if spellID == GIGANTIC_BOBBER.BUFF_ID then
         Catfish:Debug("Events: Gigantic Bobber buff applied (spellID:", spellID, ")")
 
         -- Notify OneKey module to update binding
         if Catfish.Modules and Catfish.Modules.OneKey then
-            Catfish.Modules.OneKey:OnToyUsed(GIGANTIC_BOBBER_TOY_ID)
+            Catfish.Modules.OneKey:OnToyUsed(GIGANTIC_BOBBER.TOY_ID)
         end
     end
 end
@@ -216,7 +218,7 @@ function Events.PLAYER_REGEN_ENABLED()
     -- Restore keybinding after combat (delayed to avoid taint)
     C_Timer.After(0.1, function()
         if Catfish.Modules.OneKey and Catfish.Modules.OneKey.UpdateBinding then
-            Catfish.Modules.OneKey:UpdateBinding()
+            Catfish.Modules.OneKey:UpdateBinding(11)
         end
     end)
 end
@@ -241,23 +243,25 @@ function Events.PLAYER_STARTED_MOVING()
         end
     end
 
-    -- Check swimming state change
+    -- 游泳状态变化时更新绑定
     local isSwimming = IsSwimming()
     if lastSwimmingState ~= isSwimming then
         lastSwimmingState = isSwimming
         if Catfish.Modules.OneKey and Catfish.Modules.OneKey.UpdateBinding then
-            Catfish.Modules.OneKey:UpdateBinding()
+            Catfish:Debug("Swimming state changed to:", isSwimming)
+            Catfish.Modules.OneKey:UpdateBinding(12)
         end
     end
 end
 
 function Events.PLAYER_STOPPED_MOVING()
-    -- Check swimming state change
+    -- 游泳状态变化时更新绑定
     local isSwimming = IsSwimming()
     if lastSwimmingState ~= isSwimming then
         lastSwimmingState = isSwimming
         if Catfish.Modules.OneKey and Catfish.Modules.OneKey.UpdateBinding then
-            Catfish.Modules.OneKey:UpdateBinding()
+            Catfish:Debug("Swimming state changed to:", isSwimming)
+            Catfish.Modules.OneKey:UpdateBinding(13)
         end
     end
 end
@@ -267,9 +271,9 @@ end
 -- ============================================
 
 function Events.PLAYER_MOUNT_DISPLAY_CHANGED()
-    -- Update OneKey binding when mount state changes
+    -- 坐骑状态变化时更新绑定
     if Catfish.Modules.OneKey and Catfish.Modules.OneKey.UpdateBinding then
-        Catfish.Modules.OneKey:UpdateBinding()
+        Catfish.Modules.OneKey:UpdateBinding(14)
     end
 end
 
@@ -312,9 +316,15 @@ function Events.UNIT_AURA(unit)
         if Catfish.Modules.LureManager then
             Catfish.Modules.LureManager:OnAuraChanged()
         end
-        -- Update OneKey binding when swimming (raft buff may have changed)
-        if Catfish.Modules.OneKey then
-            Catfish.Modules.OneKey:OnUnitAuraEvent(unit)
+
+        -- 检查游泳状态变化（上浮到木筏上时会触发）
+        local isSwimming = IsSwimming()
+        if lastSwimmingState ~= isSwimming then
+            lastSwimmingState = isSwimming
+            if Catfish.Modules.OneKey and Catfish.Modules.OneKey.UpdateBinding then
+                Catfish:Debug("UNIT_AURA: Swimming state changed to:", isSwimming)
+                Catfish.Modules.OneKey:UpdateBinding(15)
+            end
         end
     end
 end
@@ -379,20 +389,20 @@ end
 -- Item Data Events
 -- ============================================
 
-local GIGANTIC_BOBBER_TOY_ID = 202207
-
 function Events.GET_ITEM_INFO_RECEIVED(itemID, success)
-    -- When Gigantic Bobber item data is received, update the keybinding
-    if itemID == GIGANTIC_BOBBER_TOY_ID and success then
+    local GIGANTIC_BOBBER = Catfish.Data.Constants.GIGANTIC_BOBBER
+    -- When Gigantic Bobber item data is received, update caches
+    if itemID == GIGANTIC_BOBBER.TOY_ID and success then
         local itemName = GetItemInfo(itemID)
         Catfish:Debug("GET_ITEM_INFO_RECEIVED: Gigantic Bobber data loaded:", itemName)
 
-        -- Update OneKey cache and binding
+        -- Update ItemManager cache
+        if Catfish.Modules and Catfish.Modules.ItemManager then
+            Catfish.Modules.ItemManager:UpdateGiganticBobberCache()
+        end
+        -- Update OneKey binding
         if Catfish.Modules and Catfish.Modules.OneKey then
-            if Catfish.Modules.OneKey.UpdateGiganticBobberCache then
-                Catfish.Modules.OneKey:UpdateGiganticBobberCache()
-            end
-            Catfish.Modules.OneKey:UpdateBinding()
+            Catfish.Modules.OneKey:UpdateBinding(15)
         end
     end
 end

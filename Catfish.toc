@@ -24,6 +24,7 @@ Core\Core.lua
 Core\Events.lua
 
 # 模块
+Modules\ItemManager.lua
 Modules\OneKey.lua
 Modules\DoubleClick.lua
 Modules\Equipment.lua
@@ -42,6 +43,7 @@ UI\ToySelector.lua
 UI\StatsHUD.lua
 
 # 数据
+Data\Constants.lua
 Data\FishingPoles.lua
 Data\FishingHats.lua
 Data\FishingItems.lua

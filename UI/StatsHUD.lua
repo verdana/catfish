@@ -42,12 +42,25 @@ function StatsHUD:CreateFrame()
     -- Create main frame
     local frame = CreateFrame("Frame", "CatfishStatsHUD", UIParent, "BackdropTemplate")
     frame:SetSize(250, 150)
-    frame:SetPoint("CENTER", UIParent, "CENTER", 200, -100)
+
+    -- Restore position or use default
+    local pos = Catfish.charDB.hudPosition
+    if pos then
+        frame:SetPoint(pos.point or "CENTER", UIParent, pos.point or "CENTER", pos.x or 200, pos.y or -100)
+    else
+        frame:SetPoint("CENTER", UIParent, "CENTER", 200, -100)
+    end
+
     frame:SetMovable(true)
     frame:EnableMouse(true)
     frame:RegisterForDrag("LeftButton")
     frame:SetScript("OnDragStart", frame.StartMoving)
-    frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
+    frame:SetScript("OnDragStop", function(f)
+        f:StopMovingOrSizing()
+        -- Save position
+        local point, _, _, x, y = f:GetPoint()
+        Catfish.charDB.hudPosition = { point = point, x = x, y = y }
+    end)
     frame:SetClampedToScreen(true)
 
     -- Background
@@ -139,19 +152,6 @@ function StatsHUD:Update()
     end
     table.sort(sortedItems, function(a, b) return a.count > b.count end)
 
-    -- Helper to get quality color
-    local function GetQualityColor(quality)
-        local colors = {
-            [0] = "|cFF9D9D9D", -- Poor (gray)
-            [1] = "|cFFFFFFFF", -- Common (white)
-            [2] = "|cFF1EFF00", -- Uncommon (green)
-            [3] = "|cFF0070DD", -- Rare (blue)
-            [4] = "|cFFA335EE", -- Epic (purple)
-            [5] = "|cFFFF8000", -- Legendary (orange)
-        }
-        return colors[quality] or "|cFFFFFFFF"
-    end
-
     -- Display items (with blank line first instead of header)
     local noCatches = #sortedItems == 0
     local centerLineIndex = nil
@@ -170,7 +170,7 @@ function StatsHUD:Update()
 
         for _, item in ipairs(sortedItems) do
             local percent = totalItems > 0 and (item.count / totalItems * 100) or 0
-            local qualityColor = GetQualityColor(item.quality)
+            local qualityColor = Catfish.Data.Constants:GetQualityColor(item.quality)
             local line = qualityColor .. item.name .. END_COLOR .. GRAY_COLOR .. ": " .. item.count .. " (" .. string.format("%.1f", percent) .. "%)" .. END_COLOR
             lines[lineIndex] = line
             lineIndex = lineIndex + 1

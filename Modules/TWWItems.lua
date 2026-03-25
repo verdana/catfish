@@ -7,29 +7,12 @@ local TWWItems = {}
 Catfish.Modules.TWWItems = TWWItems
 
 -- ============================================
--- 物品数据
+-- 物品数据 (使用 Constants)
 -- ============================================
 
-TWWItems.ITEMS = {
-    -- 阿曼尼垂钓者的结界
-    amaniWard = {
-        itemID = 241148,
-        buffSpellID = 1237919,
-        name = "阿曼尼垂钓者的结界",
-    },
-    -- 好运神灵鱼诱饵
-    fortuneBait = {
-        itemID = 241145,
-        buffSpellID = 1237964,
-        name = "好运神灵鱼诱饵",
-    },
-    -- 不祥章鱼诱饵
-    octopusBait = {
-        itemID = 241149,
-        buffSpellID = 1237965,
-        name = "不祥章鱼诱饵",
-    },
-}
+local function GetTWWItems()
+    return Catfish.Data.Constants.TWW_ITEMS
+end
 
 -- ============================================
 -- 检查函数
@@ -37,7 +20,7 @@ TWWItems.ITEMS = {
 
 -- 检查玩家是否有指定物品
 function TWWItems:HasItem(itemKey)
-    local itemData = self.ITEMS[itemKey]
+    local itemData = GetTWWItems()[itemKey]
     if not itemData then return false end
 
     return Catfish.API:PlayerHasItem(itemData.itemID)
@@ -45,7 +28,7 @@ end
 
 -- 检查玩家是否有指定Buff
 function TWWItems:HasBuff(itemKey)
-    local itemData = self.ITEMS[itemKey]
+    local itemData = GetTWWItems()[itemKey]
     if not itemData then return false end
 
     return Catfish.API:UnitHasBuff("player", itemData.buffSpellID)
@@ -53,7 +36,7 @@ end
 
 -- 获取物品信息
 function TWWItems:GetItemInfo(itemKey)
-    return self.ITEMS[itemKey]
+    return GetTWWItems()[itemKey]
 end
 
 -- ============================================
@@ -61,7 +44,7 @@ end
 -- ============================================
 
 function TWWItems:UseItem(itemKey)
-    local itemData = self.ITEMS[itemKey]
+    local itemData = GetTWWItems()[itemKey]
     if not itemData then
         Catfish:Debug("TWWItems: Unknown item key:", itemKey)
         return false

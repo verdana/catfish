@@ -21,14 +21,22 @@ local function CapturePrint(...)
     -- Capture original output
     local args = {...}
     local message = ""
+    local argCount = select("#", ...)
 
-    for i = 1, select("#", ...) do
+    for i = 1, argCount do
         local arg = select(i, ...)
-        if arg then
+        -- 正确处理 nil 和 false
+        if arg == nil then
+            message = message .. "nil"
+        elseif arg == false then
+            message = message .. "false"
+        elseif arg == true then
+            message = message .. "true"
+        else
             message = message .. tostring(arg)
-            if i < select("#", ...) then
-                message = message .. " "
-            end
+        end
+        if i < argCount then
+            message = message .. " "
         end
     end
 

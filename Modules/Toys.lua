@@ -73,8 +73,7 @@ function Toys:ScanToys()
             end
         end
     end
-
-    Catfish:Debug("Toy scan complete:", #self.ownedRafts, "rafts,", #self.ownedBobbers, "bobbers")
+    -- Catfish:Debug("Toy scan complete:", #self.ownedRafts, "rafts,", #self.ownedBobbers, "bobbers")
 end
 
 -- ============================================
@@ -322,8 +321,7 @@ end
 function Toys:Init()
     -- Scan for owned toys
     self:ScanToys()
-
-    Catfish:Debug("Toys module initialized")
+    -- Catfish:Debug("Toys module initialized")
 end
 
 -- ============================================

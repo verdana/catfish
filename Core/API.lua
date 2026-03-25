@@ -28,6 +28,12 @@ local FISHING_SPELL_IDS = {
     301092,
 }
 
+-- Build hash set for O(1) lookup
+local FISHING_SPELL_SET = {}
+for _, id in ipairs(FISHING_SPELL_IDS) do
+    FISHING_SPELL_SET[id] = true
+end
+
 function API:GetFishingSpellIDs()
     return FISHING_SPELL_IDS
 end
@@ -37,12 +43,7 @@ function API:GetFishingSpellID()
 end
 
 function API:IsFishingSpell(spellID)
-    for _, id in ipairs(FISHING_SPELL_IDS) do
-        if id == spellID then
-            return true
-        end
-    end
-    return false
+    return FISHING_SPELL_SET[spellID] or false
 end
 
 function API:GetFishingSpellName()

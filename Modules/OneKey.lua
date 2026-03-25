@@ -1,5 +1,5 @@
 -- Catfish - OneKey.lua
--- One-key fishing module using WoW override keybinding system
+-- One-key fishing module - simplified version
 -- Uses SetOverrideBindingClick to handle toy usage before casting
 
 local ADDON_NAME, Catfish = ...
@@ -7,13 +7,14 @@ local ADDON_NAME, Catfish = ...
 local OneKey = {}
 Catfish.Modules.OneKey = OneKey
 
+-- ============================================
 -- Configuration
+-- ============================================
+
 OneKey.keybind = nil
-OneKey.isActive = false
 OneKey.autoButton = nil
-OneKey.fishButton = nil  -- The button that handles fishing action
-OneKey.lastReelTime = 0  -- Track last reel time for cooldown
-OneKey.reelCooldown = 0.3  -- Cooldown in seconds after reeling
+OneKey.lastBindingUpdate = 0
+OneKey.bindingDebounce = 0.05  -- 50ms 防抖
 
 -- ============================================
 -- Helper Functions
@@ -29,343 +30,82 @@ local function GetFishingSpellName()
     return nil
 end
 
--- Check if player has fishing buff (is currently fishing)
+-- 检查是否有钓鱼buff（正在钓鱼中）
 local function HasFishingBuff()
-    if C_Spell and C_Spell.GetSpellInfo then
-        local name, text, texture, startTime, endTime, isTradeSkill, notInterruptible, spellID = UnitChannelInfo("player")
-        if name and spellID then
-            if Catfish.API:IsFishingSpell(spellID) then
-                return true
-            end
-        end
+    local name, text, texture, startTime, endTime, isTradeSkill, notInterruptible, spellID = UnitChannelInfo("player")
+    if name and spellID then
+        return Catfish.API:IsFishingSpell(spellID)
     end
     return false
 end
 
--- Check if player needs to use Gigantic Bobber toy
-local GIGANTIC_BOBBER_BUFF_ID = 397827
-local GIGANTIC_BOBBER_TOY_ID = 202207
-local GIGANTIC_BOBBER_NAME = nil  -- Will be cached on first use
-
-local function GetGiganticBobberName()
-    if GIGANTIC_BOBBER_NAME then
-        return GIGANTIC_BOBBER_NAME
-    end
-    local name = Catfish.API:GetItemName(GIGANTIC_BOBBER_TOY_ID)
-    Catfish:Debug("OneKey: GetGiganticBobberName - GetItemName returned:", tostring(name))
-    if name then
-        GIGANTIC_BOBBER_NAME = name  -- 只缓存有效名称
-    end
-    return name
-end
-
--- Public function to update the cached name (called when item data is received)
-function OneKey:UpdateGiganticBobberCache()
-    local name = Catfish.API:GetItemName(GIGANTIC_BOBBER_TOY_ID)
-    if name then
-        GIGANTIC_BOBBER_NAME = name
-        Catfish:Debug("OneKey: Updated Gigantic Bobber cache:", name)
-    end
-end
-
--- Get custom bobber toy name if selected
-local function GetCustomBobberName()
-    local toyID = Catfish.db.selectedBobberToy
-    if not toyID then
-        return nil
-    end
-    return Catfish.API:GetItemName(toyID)
-end
-
--- Get raft toy name if selected and available
-local function GetRaftName()
-    local config = Catfish.db.toys
-    if config.raftMode == "none" then
-        return nil
-    end
-
-    if config.raftMode == "specific" and config.selectedRaft then
-        local cooldown = Catfish.API:GetToyCooldown(config.selectedRaft)
-        if cooldown == 0 then
-            return Catfish.API:GetItemName(config.selectedRaft)
-        end
-        return nil
-    end
-
-    -- Random mode: get first available raft
-    if Catfish.Modules.Toys then
-        local rafts = Catfish.Modules.Toys:GetOwnedRafts()
-        for _, toy in ipairs(rafts) do
-            local cooldown = Catfish.API:GetToyCooldown(toy.toyID)
-            if cooldown == 0 then
-                return toy.name
-            end
-        end
-    end
-    return nil
-end
-
--- Get raft spellID for buff check
-local function GetRaftSpellID()
-    local config = Catfish.db.toys
-    if config.raftMode == "none" then
-        return nil
-    end
-
-    if config.raftMode == "specific" and config.selectedRaft then
-        -- Find the spellID for selected raft
-        if Catfish.Data.Toys and Catfish.Data.Toys.Rafts then
-            for _, toy in ipairs(Catfish.Data.Toys.Rafts) do
-                if toy.toyID == config.selectedRaft then
-                    return toy.spellID
-                end
-            end
-        end
-        return nil
-    end
-
-    -- Random mode: get spellID of first available raft
-    if Catfish.Modules.Toys then
-        local rafts = Catfish.Modules.Toys:GetOwnedRafts()
-        for _, toy in ipairs(rafts) do
-            local cooldown = Catfish.API:GetToyCooldown(toy.toyID)
-            if cooldown == 0 then
-                return toy.spellID
-            end
-        end
-    end
-    return nil
-end
-
--- Check if player already has raft buff
-local function HasRaftBuff()
-    -- Check all known raft spell IDs
-    local raftSpellIDs = {383268, 124036, 288758, 1218420}
-    for _, spellID in ipairs(raftSpellIDs) do
-        if Catfish.API:UnitHasBuff("player", spellID) then
-            return true
-        end
+-- 检查是否有浮漂（soft target）
+local function HasBobber()
+    if GetSoftInteractTarget then
+        return GetSoftInteractTarget() ~= nil
     end
     return false
 end
 
--- Get raft buff spell name for macro conditionals
-local RAFT_BUFF_NAMES = {
-    "Tuskarr Dinghy",      -- 383268
-    "Anglers Fishing Raft", -- 124036
-    "Gnarlwood Waveboard",  -- 288758
-    "Personal Fishing Barge", -- 1218420
-}
-
--- Get raft buff name for macro conditional
-local function GetRaftBuffNameForMacro()
-    -- Return a condition string that checks for NO raft buffs
-    -- In WoW macros, [] groups are AND conditions
-    -- Format: [nobuff:BuffA][nobuff:BuffB]...
-    local conditions = {}
-    for _, buffName in ipairs(RAFT_BUFF_NAMES) do
-        table.insert(conditions, "[nobuff:" .. buffName .. "]")
-    end
-    return table.concat(conditions, "")
-end
-
--- Check if we need to use raft
-local function NeedsRaft()
-    if Catfish.db.toys.raftMode == "none" then
-        return false
-    end
-    if not IsSwimming() then
-        return false
-    end
-    -- Already on a raft
-    if HasRaftBuff() then
-        return false
-    end
-    return GetRaftName() ~= nil
-end
-
--- Check if we need to use custom bobber toy
-local function NeedsCustomBobber()
-    if not Catfish.db.selectedBobberToy then
-        return false
+-- 检查是否应该解除绑定（让按键保持原有功能）
+local function ShouldUnbind()
+    if InCombatLockdown() then
+        return true, "combat"
     end
 
-    -- Check if player has the toy
-    if not Catfish.API:PlayerHasToy(Catfish.db.selectedBobberToy) then
-        return false
+    -- 坐骑上 → 解除绑定
+    if IsMounted() then
+        return true, "mounted"
     end
 
-    -- Check if toy is on cooldown
-    local cooldown = Catfish.API:GetToyCooldown(Catfish.db.selectedBobberToy)
-    if cooldown > 0 then
-        Catfish:Debug("OneKey: NeedsCustomBobber - toy on cooldown:", cooldown)
-        return false
-    end
+    -- 游泳中检查
+    if IsSwimming() then
+        local ItemManager = Catfish.Modules.ItemManager
+        local config = Catfish.db.toys
 
-    return true
-end
-
-local function NeedsGiganticBobber()
-    if not Catfish.db.useGiganticBobber then
-        Catfish:Debug("OneKey: NeedsGiganticBobber - option disabled")
-        return false
-    end
-
-    -- Check if player already has the buff
-    local hasBuff = Catfish.API:UnitHasBuff("player", GIGANTIC_BOBBER_BUFF_ID)
-    if hasBuff then
-        Catfish:Debug("OneKey: NeedsGiganticBobber - already has buff")
-        return false
-    end
-
-    -- Check if player has the toy
-    local hasToy = Catfish.API:PlayerHasToy(GIGANTIC_BOBBER_TOY_ID)
-    if not hasToy then
-        Catfish:Debug("OneKey: NeedsGiganticBobber - player doesn't have toy")
-        return false
-    end
-
-    -- Check if toy is on cooldown
-    local cooldown = Catfish.API:GetToyCooldown(GIGANTIC_BOBBER_TOY_ID)
-    if cooldown > 0 then
-        Catfish:Debug("OneKey: NeedsGiganticBobber - toy on cooldown:", cooldown)
-        return false
-    end
-
-    Catfish:Debug("OneKey: NeedsGiganticBobber - returning true")
-    return true
-end
-
--- ============================================
--- The War Within Items Support
--- ============================================
-
-local TWW_ITEMS = {
-    amaniWard = { itemID = 241148, buffSpellID = 1237919 },
-    fortuneBait = { itemID = 241145, buffSpellID = 1237964 },
-    octopusBait = { itemID = 241149, buffSpellID = 1237965 },
-}
-
--- Check if we need to use Amani Ward
-local function NeedsAmaniWard()
-    if not Catfish.db.tww or not Catfish.db.tww.useAmaniWard then
-        return false
-    end
-
-    -- Check if player already has the buff
-    if Catfish.API:UnitHasBuff("player", TWW_ITEMS.amaniWard.buffSpellID) then
-        return false
-    end
-
-    -- Check if player has the item
-    if not Catfish.API:PlayerHasItem(TWW_ITEMS.amaniWard.itemID) then
-        return false
-    end
-
-    return true
-end
-
--- Check if we need to use selected bait
-local function NeedsTWWBait()
-    if not Catfish.db.tww or not Catfish.db.tww.selectedBait then
-        return false
-    end
-
-    local baitKey = Catfish.db.tww.selectedBait
-    local baitData = TWW_ITEMS[baitKey .. "Bait"]
-    if not baitData then
-        return false
-    end
-
-    -- Check if player already has the buff
-    if Catfish.API:UnitHasBuff("player", baitData.buffSpellID) then
-        return false
-    end
-
-    -- Check if player has the item
-    if not Catfish.API:PlayerHasItem(baitData.itemID) then
-        return false
-    end
-
-    return true
-end
-
--- Get TWW bait item name
-local function GetTWWBaitName()
-    if not Catfish.db.tww or not Catfish.db.tww.selectedBait then
-        return nil
-    end
-
-    local baitKey = Catfish.db.tww.selectedBait
-    local baitData = TWW_ITEMS[baitKey .. "Bait"]
-    if not baitData then
-        return nil
-    end
-
-    return Catfish.API:GetItemName(baitData.itemID)
-end
-
--- Check if any swim toy is needed
-local function NeedsSwimToys()
-    return IsSwimming() and (NeedsRaft() or NeedsGiganticBobber() or NeedsCustomBobber())
-end
-
--- ============================================
--- Fishing Action Button Creation
--- This button handles the actual fishing logic
--- ============================================
-
-local function CreateFishActionButton()
-    -- Create a secure action button that we'll click via keybind
-    local button = CreateFrame("Button", "CatfishFishActionButton", UIParent, "SecureActionButtonTemplate")
-    button:SetSize(1, 1)
-    button:SetPoint("CENTER", UIParent, "CENTER", 10000, 10000)
-    button:Hide()
-
-    -- Register for clicks
-    button:RegisterForClicks("AnyUp", "AnyDown")
-
-    -- Secure snippet to handle the action
-    -- This runs in secure environment
-    button:SetAttribute("_onclick", [[
-        -- Check if we have a soft target (bobber)
-        local softTarget = GetSoftInteractTarget()
-
-        if softTarget then
-            -- We have a bobber, interact with it
-            self:SetAttribute("type", "macro")
-            self:SetAttribute("macrotext", "/click SoftInteractTarget")
-        else
-            -- No bobber, cast fishing
-            self:SetAttribute("type", "spell")
-            self:SetAttribute("spell", "钓鱼")
+        -- 配置了木筏且已有木筏buff → 解除绑定让用户上浮到木筏上
+        if config.raftMode ~= "none" and ItemManager:HasRaftBuff() then
+            return true, "swimming with raft"
         end
-    ]])
 
-    return button
+        -- 其他游泳情况（需要木筏或没配置木筏）→ 不解除绑定
+        -- 需要木筏时，按键会触发使用木筏
+        -- 没配置木筏时，按键会尝试钓鱼（会失败，但这是用户的选择）
+        return false, nil
+    end
+
+    return false, nil
 end
 
 -- ============================================
--- Auto Button Creation (for keybind override)
+-- Debounce
+-- ============================================
+
+function OneKey:CanUpdateBinding()
+    local now = GetTime()
+    if now - self.lastBindingUpdate < self.bindingDebounce then
+        return false
+    end
+    self.lastBindingUpdate = now
+    return true
+end
+
+-- ============================================
+-- Button Creation
 -- ============================================
 
 local function CreateAutoButton()
-    -- Create a button that will receive the keybind
     local button = CreateFrame("Button", "CatfishOneKeyAutoButton", UIParent, "SecureActionButtonTemplate")
     button:SetSize(1, 1)
     button:SetPoint("CENTER", UIParent, "CENTER", 10000, 10000)
     button:Hide()
 
-    -- Set up as click button
-    button:SetAttribute("type", "click")
-    button:SetAttribute("clickbutton", CatfishFishActionButton)
+    button:SetAttribute("type", "macro")
 
-    -- OnShow: Update the binding
     button:SetScript("OnShow", function()
-        OneKey:UpdateBinding()
+        OneKey:UpdateBinding(1)
     end)
 
-    -- OnHide: Clear the binding
     button:SetScript("OnHide", function()
         ClearOverrideBindings(button)
     end)
@@ -392,167 +132,88 @@ local BLOCKED_KEYS = {
     ["BUTTON3"] = true,
 }
 
--- Update binding based on current state
--- @param skipCooldownCheck If true, skip the reel cooldown check (used by scheduled updates)
-function OneKey:UpdateBinding(skipCooldownCheck)
-    Catfish:Debug("OneKey: UpdateBinding called", skipCooldownCheck and "(skip cooldown)" or "")
+-- 更新绑定（核心逻辑）
+function OneKey:UpdateBinding(id)
+    -- 防抖检查
+    if not self:CanUpdateBinding() then
+        Catfish:Debug("OneKey: UpdateBinding debounced")
+        return
+    end
 
-    -- Cannot update bindings during combat lockdown
+    -- 战斗锁定检查
     if InCombatLockdown() then
-        Catfish:Debug("OneKey: UpdateBinding skipped - in combat lockdown")
+        Catfish:Debug("OneKey: In combat lockdown, skip binding")
         return
     end
 
-    if not self.autoButton then
-        Catfish:Debug("OneKey: UpdateBinding skipped - no autoButton")
+    -- 基本检查
+    if not self.autoButton or not self.autoButton:IsVisible() or not self.keybind then
         return
     end
 
-    if not self.autoButton:IsVisible() then
-        Catfish:Debug("OneKey: UpdateBinding skipped - button not visible")
-        return
-    end
-
-    if not self.keybind then
-        Catfish:Debug("OneKey: UpdateBinding skipped - no keybind set")
-        return
-    end
-
-    -- Clear existing binding first
+    -- 清除现有绑定
     ClearOverrideBindings(self.autoButton)
 
     local normalizedKey = KEY_NORMALIZE[self.keybind] or self.keybind
-    local softTarget = GetSoftInteractTarget and GetSoftInteractTarget()
-    local hasFishingBuff = HasFishingBuff()
-    local isFishing = Catfish.Core:IsFishing()
-    local state = Catfish.Core:GetState()
 
-    if softTarget or hasFishingBuff or isFishing or state == Catfish.Core.State.WAITING then
-        -- Bind to INTERACTTARGET for reeling in
+    Catfish:Debug("")
+    Catfish:Debug("=== UpdateBinding START === ", id)
+    Catfish:Debug("IsSwimming: ", IsSwimming(), ", IsMounted: ", IsMounted(),  ", InCombat: ", InCombatLockdown())
+
+    -- 检查是否应该解除绑定
+    local shouldUnbind, reason = ShouldUnbind()
+    Catfish:Debug("ShouldUnbind:", shouldUnbind, "reason:", reason)
+    if shouldUnbind then
+        Catfish:Debug("OneKey: Unbound, reason:", reason)
+        return
+    end
+
+    -- 有浮漂或有钓鱼buff → 收杆
+    if HasBobber() or HasFishingBuff() or Catfish.Core:IsFishing() then
         SetOverrideBinding(self.autoButton, true, normalizedKey, "INTERACTTARGET")
-        Catfish:Debug("OneKey: Bound to INTERACTTARGET (softTarget:", softTarget ~= nil, "hasBuff:", hasFishingBuff, "isFishing:", isFishing, "state:", state, ")")
+        Catfish:Debug("OneKey: Bound to INTERACTTARGET")
+        return
+    end
+
+    -- 获取 ItemManager
+    local ItemManager = Catfish.Modules.ItemManager
+
+    -- 检查是否需要等待木筏冷却
+    if ItemManager:IsWaitingForRaft() then
+        Catfish:Debug("OneKey: Waiting for raft cooldown, unbind")
+        -- 解除绑定，让用户等待木筏冷却
+        return
+    end
+
+    -- 检查是否需要先使用GCD物品（木筏/结界/鱼饵）
+    local needsGCD = ItemManager:NeedsGCDItem()
+    Catfish:Debug("NeedsGCDItem:", needsGCD)
+    if needsGCD then
+        local macro = ItemManager:GenerateGCDItemMacro()
+        Catfish:Debug("GCD macro:", macro)
+        if macro then
+            Catfish.API:SetToyButtonMacro(macro)
+            SetOverrideBindingClick(self.autoButton, true, normalizedKey, "CatfishToyButton")
+            Catfish:Debug("OneKey: Bound to GCD item (raft)")
+            -- 不设置定时器！用户需要先上浮到木筏上
+            -- 游泳状态变化（离开游泳）时会自动触发更新
+            return
+        end
+    end
+
+    -- 无浮漂且无GCD物品 → 生成钓鱼宏（玩具+钓鱼）
+    local macro = ItemManager:GenerateFishingMacro()
+    Catfish:Debug("Fishing macro:", macro)
+    if macro and macro ~= "" then
+        Catfish.API:SetToyButtonMacro(macro)
+        SetOverrideBindingClick(self.autoButton, true, normalizedKey, "CatfishToyButton")
+        Catfish:Debug("OneKey: Bound to fishing macro")
     else
-        -- Check if we're in cooldown after reeling (to prevent accidental cast after loot)
-        -- Skip this check if called from scheduled update
-        if not skipCooldownCheck then
-            local timeSinceReel = GetTime() - self.lastReelTime
-            if timeSinceReel < self.reelCooldown then
-                Catfish:Debug("OneKey: UpdateBinding skipped - in reel cooldown")
-                return
-            end
-        end
-
-        -- Swimming with toys configured - use smart swim macro
-        if IsSwimming() and NeedsSwimToys() then
-            local macroText = self:GetSwimFishingMacro()
-            if macroText then
-                Catfish.API:SetToyButtonMacro(macroText)
-                SetOverrideBindingClick(self.autoButton, true, normalizedKey, "CatfishToyButton")
-                Catfish:Debug("OneKey: Bound to swim fishing macro")
-            end
-            return
-        end
-
-        -- Swimming without toys - no binding (let SPACE work normally for ascending)
-        if IsSwimming() then
-            Catfish:Debug("OneKey: Swimming without toys - no binding set")
-            return
-        end
-
-        -- Mounted - no binding (let keys work normally for mount control)
-        if IsMounted() then
-            Catfish:Debug("OneKey: Mounted - no binding set")
-            return
-        end
-
-        -- Check if we need to use Gigantic Bobber toy first
-        if NeedsGiganticBobber() then
-            -- Set up the toy button with macro (like Angleur does)
-            local toyName = GetGiganticBobberName()
-            if toyName and toyName ~= "" then
-                Catfish.API:SetToyButtonMacro(toyName)
-                -- Bind to click the toy button
-                SetOverrideBindingClick(self.autoButton, true, normalizedKey, "CatfishToyButton")
-                Catfish:Debug("OneKey: Bound to Gigantic Bobber toy button:", toyName)
-            else
-                -- Toy name not available yet, fall back to fishing spell
-                -- Will retry on next keybind update
-                Catfish:Debug("OneKey: Toy name not available, falling back to fishing spell")
-                local spellName = GetFishingSpellName()
-                if spellName then
-                    SetOverrideBindingSpell(self.autoButton, true, normalizedKey, spellName)
-                    Catfish:Debug("OneKey: Bound to fishing spell (fallback):", spellName)
-                end
-            end
-        elseif NeedsCustomBobber() then
-            -- Use custom bobber toy before fishing
-            local bobberName = GetCustomBobberName()
-            local spellName = GetFishingSpellName()
-            if bobberName and spellName then
-                -- Create macro: use bobber toy then cast fishing
-                local macroText = "/use " .. bobberName .. "\n/cast " .. spellName
-                Catfish.API:SetToyButtonMacro(macroText)
-                SetOverrideBindingClick(self.autoButton, true, normalizedKey, "CatfishToyButton")
-                Catfish:Debug("OneKey: Bound to custom bobber macro:", bobberName)
-            else
-                -- Fall back to fishing spell
-                if spellName then
-                    SetOverrideBindingSpell(self.autoButton, true, normalizedKey, spellName)
-                    Catfish:Debug("OneKey: Bound to fishing spell (custom bobber fallback):", spellName)
-                end
-            end
-        elseif NeedsAmaniWard() or NeedsTWWBait() then
-            -- Use The War Within items before fishing
-            -- These are consumables that trigger GCD, so we need to use them first
-            -- then wait for next keypress to cast fishing
-            local macroLines = {}
-
-            -- Build item usage only (no fishing cast - will be added after GCD)
-            if NeedsAmaniWard() then
-                local itemName = Catfish.API:GetItemName(TWW_ITEMS.amaniWard.itemID)
-                if itemName then
-                    table.insert(macroLines, "/use " .. itemName)
-                    Catfish:Debug("OneKey: TWW binding - adding Amani Ward:", itemName)
-                end
-            end
-
-            if NeedsTWWBait() then
-                local baitName = GetTWWBaitName()
-                if baitName then
-                    table.insert(macroLines, "/use " .. baitName)
-                    Catfish:Debug("OneKey: TWW binding - adding bait:", baitName)
-                end
-            end
-
-            if #macroLines > 0 then
-                local macroText = table.concat(macroLines, "\n")
-                Catfish.API:SetToyButtonMacro(macroText)
-                SetOverrideBindingClick(self.autoButton, true, normalizedKey, "CatfishToyButton")
-                Catfish:Debug("OneKey: Bound to TWW items (use only, then wait for GCD)")
-
-                -- Schedule binding update after GCD (~1.5s) to switch to fishing
-                C_Timer.After(1.5, function()
-                    if not InCombatLockdown() then
-                        self:UpdateBinding()
-                    end
-                end)
-            else
-                -- Fall back to fishing spell
-                local spellName = GetFishingSpellName()
-                if spellName then
-                    SetOverrideBindingSpell(self.autoButton, true, normalizedKey, spellName)
-                    Catfish:Debug("OneKey: Bound to fishing spell (TWW fallback):", spellName)
-                end
-            end
-        else
-            -- Bind to fishing spell directly
-            local spellName = GetFishingSpellName()
-            if spellName then
-                SetOverrideBindingSpell(self.autoButton, true, normalizedKey, spellName)
-                Catfish:Debug("OneKey: Bound to fishing spell:", spellName)
-            else
-                Catfish:Debug("OneKey: Failed to get fishing spell name for binding")
-            end
+        -- 无物品需要使用，直接绑定钓鱼法术
+        local spellName = GetFishingSpellName()
+        if spellName then
+            SetOverrideBindingSpell(self.autoButton, true, normalizedKey, spellName)
+            Catfish:Debug("OneKey: Bound to fishing spell:", spellName)
         end
     end
 end
@@ -563,12 +224,12 @@ function OneKey:SetKeybind(keyOrButton)
         return false
     end
 
-    -- Clear existing binding
+    -- 清除现有绑定
     if self.autoButton then
         ClearOverrideBindings(self.autoButton)
     end
 
-    -- Clear binding if key is nil or empty
+    -- 清除绑定
     if not keyOrButton or keyOrButton == "" then
         self.keybind = nil
         CatfishCharDB.keybinding = nil
@@ -576,17 +237,15 @@ function OneKey:SetKeybind(keyOrButton)
         return true
     end
 
-    -- Silently ignore blocked keys
+    -- 忽略屏蔽的按键
     if BLOCKED_KEYS[keyOrButton] then
         return false
     end
 
-    -- Store the keybind
+    -- 保存并更新
     self.keybind = keyOrButton
     CatfishCharDB.keybinding = keyOrButton
-
-    -- Update the binding
-    self:UpdateBinding()
+    self:UpdateBinding(3)
 
     Catfish:Print("快捷键已设置为: " .. keyOrButton)
     return true
@@ -601,18 +260,15 @@ function OneKey:ClearKeybind()
 end
 
 -- ============================================
--- Enable/Disable Management
+-- Enable/Disable
 -- ============================================
 
 function OneKey:SetEnabled(enabled)
     if InCombatLockdown() then return end
 
     if self.autoButton then
-        if enabled then
-            -- Only show button if not in sleep mode
-            if not Catfish.db.sleepMode then
-                self.autoButton:Show()
-            end
+        if enabled and not Catfish.db.sleepMode then
+            self.autoButton:Show()
         else
             self.autoButton:Hide()
         end
@@ -620,169 +276,14 @@ function OneKey:SetEnabled(enabled)
 end
 
 -- ============================================
--- State Update (called from Core when state changes)
+-- State Change Handler
 -- ============================================
 
 function OneKey:OnStateChanged()
     if not self.autoButton or not self.autoButton:IsVisible() or not self.keybind then
         return
     end
-
-    -- Check if we just finished fishing (transition from WAITING/REELING to IDLE)
-    local state = Catfish.Core:GetState()
-    if state == Catfish.Core.State.IDLE then
-        -- Record reel time to prevent accidental cast
-        self.lastReelTime = GetTime()
-
-        -- Schedule binding update after cooldown
-        -- Pass true to skip cooldown check since we're already waiting the cooldown period
-        C_Timer.After(self.reelCooldown, function()
-            Catfish:Debug("OneKey: Scheduled binding update triggered")
-            self:UpdateBinding(true)  -- Skip cooldown check
-        end)
-    end
-
-    self:UpdateBinding()
-end
-
--- ============================================
--- Toy Usage Callback (called from Events when toy is used)
--- ============================================
-
-function OneKey:OnToyUsed(toyID)
-    Catfish:Debug("OneKey: OnToyUsed called with toyID:", toyID)
-
-    -- Only handle Gigantic Bobber toy
-    if toyID ~= GIGANTIC_BOBBER_TOY_ID then
-        return
-    end
-
-    -- Delay update to allow buff to fully apply
-    C_Timer.After(0.5, function()
-        if not InCombatLockdown() then
-            Catfish:Debug("OneKey: Updating binding after toy usage")
-            self:UpdateBinding()
-        else
-            Catfish:Debug("OneKey: In combat, skipping binding update")
-        end
-    end)
-end
-
--- ============================================
--- Swim Fishing Macro Generation
--- ============================================
-
-function OneKey:GetSwimFishingMacro()
-    local macroLines = {}
-    local spellName = GetFishingSpellName() or "钓鱼"
-
-    -- 1. Use raft if configured and no buff (Lua checks, updated on buff change)
-    if NeedsRaft() then
-        local raftName = GetRaftName()
-        if raftName then
-            table.insert(macroLines, "/use " .. raftName)
-        end
-    end
-
-    -- 2. Use Gigantic Bobber if enabled and no buff (Lua checks)
-    if NeedsGiganticBobber() then
-        local giganticName = GetGiganticBobberName()
-        if giganticName then
-            table.insert(macroLines, "/use " .. giganticName)
-        end
-    end
-
-    -- 3. Use custom bobber if selected (cooldown check in Lua)
-    if NeedsCustomBobber() then
-        local bobberName = GetCustomBobberName()
-        if bobberName then
-            table.insert(macroLines, "/use " .. bobberName)
-        end
-    end
-
-    -- 4. Finally: cast fishing
-    table.insert(macroLines, "/cast " .. spellName)
-
-    return table.concat(macroLines, "\n")
-end
-
--- ============================================
--- The War Within Items Macro Generation
--- ============================================
-
-function OneKey:GetTWWFishingMacro()
-    local macroLines = {}
-    local spellName = GetFishingSpellName() or "钓鱼"
-
-    -- Use Amani Ward if needed
-    if NeedsAmaniWard() then
-        local itemName = Catfish.API:GetItemName(TWW_ITEMS.amaniWard.itemID)
-        if itemName then
-            table.insert(macroLines, "/use " .. itemName)
-            Catfish:Debug("OneKey: TWW macro - adding Amani Ward:", itemName)
-        end
-    end
-
-    -- Use selected bait if needed
-    if NeedsTWWBait() then
-        local baitName = GetTWWBaitName()
-        if baitName then
-            table.insert(macroLines, "/use " .. baitName)
-            Catfish:Debug("OneKey: TWW macro - adding bait:", baitName)
-        end
-    end
-
-    -- Cast fishing
-    table.insert(macroLines, "/cast " .. spellName)
-
-    local macroText = table.concat(macroLines, "\n")
-    Catfish:Debug("OneKey: TWW macro generated:", #macroLines, "lines")
-    return macroText
-end
-
--- ============================================
--- Event Handling for Buff Changes
--- ============================================
-
-function OneKey:OnUnitAuraEvent(unit)
-    -- Only care about player's aura changes
-    if unit ~= "player" then return end
-
-    -- Update binding if we're swimming (to re-evaluate raft buff)
-    if IsSwimming() and self.keybind and self.autoButton and not InCombatLockdown() then
-        Catfish:Debug("OneKey: OnUnitAuraEvent - updating swim binding")
-        self:UpdateBinding()
-    end
-end
-
--- ============================================
--- Initialization
--- ============================================
-
-function OneKey:Init()
-    -- Create fish action button first
-    self.fishButton = CreateFishActionButton()
-
-    -- Create auto button
-    self.autoButton = CreateAutoButton()
-
-    -- Load saved keybind
-    if CatfishCharDB.keybinding then
-        self.keybind = CatfishCharDB.keybinding
-    end
-
-    -- Show button if one-key mode is enabled and not in sleep mode
-    if Catfish.db.oneKeyEnabled and not Catfish.db.sleepMode then
-        self.autoButton:Show()
-    end
-end
-
--- ============================================
--- State Check
--- ============================================
-
-function OneKey:IsActive()
-    return self.isActive
+    self:UpdateBinding(4)
 end
 
 -- ============================================
@@ -790,22 +291,60 @@ end
 -- ============================================
 
 function OneKey:ClearOverrideBinding()
-    -- Clear only the override binding, keep button visible for restoration
     if self.autoButton then
         ClearOverrideBindings(self.autoButton)
     end
 end
 
 function OneKey:ClearBinding()
-    -- Hide the button to remove all bindings
     if self.autoButton then
         self.autoButton:Hide()
     end
 end
 
 function OneKey:RestoreBinding()
-    -- Show the button to restore bindings (only if one-key mode is enabled)
     if self.autoButton and self.keybind and Catfish.db.oneKeyEnabled then
         self.autoButton:Show()
     end
+end
+
+-- ============================================
+-- Compatibility Stubs (for other modules)
+-- ============================================
+
+function OneKey:OnToyUsed(toyID)
+    -- 由 ItemManager 处理，此处仅作兼容
+end
+
+function OneKey:OnUnitAuraEvent(unit)
+    -- 简化：不再需要在此处更新绑定，状态变化时会自动更新
+end
+
+function OneKey:UpdateGiganticBobberCache()
+    Catfish.Modules.ItemManager:UpdateGiganticBobberCache()
+end
+
+function OneKey:IsActive()
+    return self.autoButton ~= nil and self.autoButton:IsVisible()
+end
+
+-- ============================================
+-- Initialization
+-- ============================================
+
+function OneKey:Init()
+    -- 创建按钮
+    self.autoButton = CreateAutoButton()
+
+    -- 加载保存的快捷键
+    if CatfishCharDB.keybinding then
+        self.keybind = CatfishCharDB.keybinding
+    end
+
+    -- 显示按钮（如果启用且不在休眠模式）
+    if Catfish.db.oneKeyEnabled and not Catfish.db.sleepMode then
+        self.autoButton:Show()
+    end
+
+    Catfish:Debug("OneKey module initialized")
 end
