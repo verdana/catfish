@@ -251,8 +251,10 @@ end
 function StatsHUD:Toggle()
     if self.frame and self.frame:IsShown() then
         self:Hide()
+        Catfish.db.showStatsHUD = false
     else
         self:Show()
+        Catfish.db.showStatsHUD = true
     end
 end
 

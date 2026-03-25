@@ -144,7 +144,14 @@ end
 -- ============================================
 
 function MinimapButton:OnLeftClick()
-    -- Open options panel
+    -- Ctrl+左键：切换统计 HUD
+    if IsControlKeyDown() then
+        if Catfish.UI.StatsHUD then
+            Catfish.UI.StatsHUD:Toggle()
+        end
+        return
+    end
+    -- 普通左键：打开设置面板
     if Catfish.UI.Options then
         Catfish.UI.Options:Open()
     end
@@ -192,6 +199,7 @@ function MinimapButton:OnEnter()
 
     GameTooltip:AddLine(" ")
     GameTooltip:AddLine("|cFFFFFF00左键|r 打开设置", 0.7, 0.7, 0.7)
+    GameTooltip:AddLine("|cFFFFFF00Ctrl+左键|r 统计HUD", 0.7, 0.7, 0.7)
     GameTooltip:AddLine("|cFFFFFF00右键|r 切换激活/休眠", 0.7, 0.7, 0.7)
 
     GameTooltip:Show()
@@ -267,6 +275,10 @@ function MinimapButton:SetActiveMode()
     if Catfish.Modules.SoundManager then
         Catfish.Modules.SoundManager:OnActivate()
     end
+    -- Show HUD if enabled in settings
+    if Catfish.db.showStatsHUD and Catfish.UI.StatsHUD then
+        Catfish.UI.StatsHUD:Show()
+    end
     Catfish:Print("已激活")
 end
 
@@ -283,6 +295,10 @@ function MinimapButton:SetSleepMode()
     -- Restore sound settings when sleeping
     if Catfish.Modules.SoundManager then
         Catfish.Modules.SoundManager:OnSleep()
+    end
+    -- Hide HUD if enabled in settings
+    if Catfish.db.showStatsHUD and Catfish.UI.StatsHUD then
+        Catfish.UI.StatsHUD:Hide()
     end
     Catfish:Print("已休眠")
 end
