@@ -227,44 +227,34 @@ end
 -- Movement Events
 -- ============================================
 
-local lastSwimmingState = nil
+-- 注意：游泳状态检测已移至 StatusPoller，不再在移动事件中检测
 
-function Events.PLAYER_STARTED_MOVING()
-    if Catfish.Core then
-        local state = Catfish.Core:GetState()
+-- function Events.PLAYER_STARTED_MOVING()
+--     if Catfish.Core then
+--         local state = Catfish.Core:GetState()
 
-        -- Fishing is cancelled when moving during casting
-        if state == Catfish.Core.State.CASTING then
-            C_Timer.After(0.1, function()
-                if Catfish.API:IsPlayerMoving() then
-                    Catfish.Core:SetState(Catfish.Core.State.IDLE)
-                end
-            end)
-        end
-    end
+--         -- Fishing is cancelled when moving during casting
+--         if state == Catfish.Core.State.CASTING then
+--             C_Timer.After(0.1, function()
+--                 if Catfish.API:IsPlayerMoving() then
+--                     Catfish.Core:SetState(Catfish.Core.State.IDLE)
+--                 end
+--             end)
+--         end
+--     end
 
-    -- 游泳状态变化时更新绑定
-    local isSwimming = IsSwimming()
-    if lastSwimmingState ~= isSwimming then
-        lastSwimmingState = isSwimming
-        if Catfish.Modules.OneKey and Catfish.Modules.OneKey.UpdateBinding then
-            Catfish:Debug("Swimming state changed to:", isSwimming)
-            Catfish.Modules.OneKey:UpdateBinding(12)
-        end
-    end
-end
+--     -- 移动开始时也可以触发一次绑定更新（用于其他场景）
+--     if Catfish.Modules.OneKey and Catfish.Modules.OneKey.UpdateBinding then
+--         Catfish.Modules.OneKey:UpdateBinding("player-started-moving")
+--     end
+-- end
 
-function Events.PLAYER_STOPPED_MOVING()
-    -- 游泳状态变化时更新绑定
-    local isSwimming = IsSwimming()
-    if lastSwimmingState ~= isSwimming then
-        lastSwimmingState = isSwimming
-        if Catfish.Modules.OneKey and Catfish.Modules.OneKey.UpdateBinding then
-            Catfish:Debug("Swimming state changed to:", isSwimming)
-            Catfish.Modules.OneKey:UpdateBinding(13)
-        end
-    end
-end
+-- function Events.PLAYER_STOPPED_MOVING()
+--     -- 移动停止时触发一次绑定更新
+--     if Catfish.Modules.OneKey and Catfish.Modules.OneKey.UpdateBinding then
+--         Catfish.Modules.OneKey:UpdateBinding("player-stopped-moving")
+--     end
+-- end
 
 -- ============================================
 -- Mount Events
@@ -317,13 +307,13 @@ function Events.UNIT_AURA(unit)
             Catfish.Modules.LureManager:OnAuraChanged()
         end
 
-        -- 检查游泳状态变化（上浮到木筏上时会触发）
-        local isSwimming = IsSwimming()
-        if lastSwimmingState ~= isSwimming then
-            lastSwimmingState = isSwimming
-            if Catfish.Modules.OneKey and Catfish.Modules.OneKey.UpdateBinding then
-                Catfish:Debug("UNIT_AURA: Swimming state changed to:", isSwimming)
-                Catfish.Modules.OneKey:UpdateBinding(15)
+        -- 如果获得木筏BUFF且正在游泳，启动状态轮询
+        -- 目的：检测从游泳状态到站上木筏的变化（没有事件触发）
+        if Catfish.Modules.ItemManager and Catfish.Core.StatusPoller then
+            local hasRaftBuff = Catfish.Modules.ItemManager:HasRaftBuff()
+            if hasRaftBuff and IsSwimming() then
+                Catfish:Debug("UNIT_AURA: has raft buff and swimming, start polling")
+                Catfish.Core.StatusPoller:StartPolling("raft-buff-gained")
             end
         end
     end
@@ -422,9 +412,6 @@ function Events:Init()
 
     -- Set event handler
     eventFrame:SetScript("OnEvent", OnEvent)
-
-    -- Initialize swimming state
-    lastSwimmingState = IsSwimming()
 
     Catfish:Debug("Events module initialized, registered", #REGISTERED_EVENTS, "events")
 end

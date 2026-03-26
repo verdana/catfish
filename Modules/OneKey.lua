@@ -134,6 +134,8 @@ local BLOCKED_KEYS = {
 
 -- 更新绑定（核心逻辑）
 function OneKey:UpdateBinding(id)
+    Catfish:Print("-> UpdateBinding -> ", id)
+
     -- 防抖检查
     if not self:CanUpdateBinding() then
         Catfish:Debug("OneKey: UpdateBinding debounced")
@@ -165,6 +167,15 @@ function OneKey:UpdateBinding(id)
     Catfish:Debug("ShouldUnbind:", shouldUnbind, "reason:", reason)
     if shouldUnbind then
         Catfish:Debug("OneKey: Unbound, reason:", reason)
+
+        -- 如果是因为"游泳+有木筏BUFF"而解绑，启动轮询检测"站上木筏"
+        if reason == "swimming with raft" then
+            local StatusPoller = Catfish.Core.StatusPoller
+            if StatusPoller and not StatusPoller:IsPolling() then
+                StatusPoller:StartPolling("raft-waiting-surface")
+            end
+        end
+
         return
     end
 
@@ -279,10 +290,14 @@ end
 -- State Change Handler
 -- ============================================
 
-function OneKey:OnStateChanged()
+function OneKey:OnStateChanged(state)
+    if state == nil then return end
+
+    Catfish:Print("OneKey receive state: ", state)
     if not self.autoButton or not self.autoButton:IsVisible() or not self.keybind then
         return
     end
+    
     self:UpdateBinding(4)
 end
 
@@ -309,15 +324,21 @@ function OneKey:RestoreBinding()
 end
 
 -- ============================================
+-- StatusPoller Callbacks
+-- ============================================
+
+-- 游泳状态变化回调（由 StatusPoller 调用）
+function OneKey:OnSwimmingStateChanged(isSwimming)
+    Catfish:Debug("OneKey: OnSwimmingStateChanged - isSwimming:", tostring(isSwimming))
+    self:UpdateBinding("swimming-state-changed")
+end
+
+-- ============================================
 -- Compatibility Stubs (for other modules)
 -- ============================================
 
 function OneKey:OnToyUsed(toyID)
     -- 由 ItemManager 处理，此处仅作兼容
-end
-
-function OneKey:OnUnitAuraEvent(unit)
-    -- 简化：不再需要在此处更新绑定，状态变化时会自动更新
 end
 
 function OneKey:UpdateGiganticBobberCache()
