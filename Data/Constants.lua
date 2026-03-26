@@ -42,26 +42,26 @@ Constants.TWW_ITEMS = {
 -- ============================================
 
 Constants.QUALITY_COLORS = {
-    [0] = "|cFF9D9D9D", -- Poor (gray)
-    [1] = "|cFFFFFFFF", -- Common (white)
-    [2] = "|cFF1EFF00", -- Uncommon (green)
-    [3] = "|cFF0070DD", -- Rare (blue)
-    [4] = "|cFFA335EE", -- Epic (purple)
+    [0] = "|cFF9D9D9D", -- Poor      (gray)
+    [1] = "|cFFFFFFFF", -- Common    (white)
+    [2] = "|cFF1EFF00", -- Uncommon  (green)
+    [3] = "|cFF0070DD", -- Rare      (blue)
+    [4] = "|cFFA335EE", -- Epic      (purple)
     [5] = "|cFFFF8000", -- Legendary (orange)
 }
 
 -- ============================================
--- Raft Buff Info (木筏Buff信息)
+-- Raft Buff Info (钓鱼筏Buff信息)
 -- ============================================
 
 Constants.RAFT_SPELL_IDS = {383268, 124036, 288758, 1218420}
 
-Constants.RAFT_BUFF_NAMES = {
-    "Tuskarr Dinghy",        -- 383268
-    "Anglers Fishing Raft",  -- 124036
-    "Gnarlwood Waveboard",   -- 288758
-    "Personal Fishing Barge", -- 1218420
-}
+-- Constants.RAFT_BUFF_NAMES = {
+--     "Tuskarr Dinghy",        -- 383268
+--     "Anglers Fishing Raft",  -- 124036
+--     "Gnarlwood Waveboard",   -- 288758
+--     "Personal Fishing Barge", -- 1218420
+-- }
 
 -- ============================================
 -- Helper Functions

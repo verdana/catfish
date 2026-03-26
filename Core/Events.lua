@@ -9,35 +9,38 @@ Catfish.Core.Events = Events
 -- Event frame
 local eventFrame = nil
 
+-- 钓鱼相关的BUFF
+local playerAuras = {}
+
 -- ============================================
 -- Event Registration
 -- ============================================
 
 local REGISTERED_EVENTS = {
-    "UNIT_SPELLCAST_START",
-    "UNIT_SPELLCAST_CHANNEL_START",
-    "UNIT_SPELLCAST_CHANNEL_STOP",
-    "UNIT_SPELLCAST_FAILED",
-    "UNIT_SPELLCAST_INTERRUPTED",
-    "UNIT_SPELLCAST_SUCCEEDED",
-    "PLAYER_SOFT_INTERACT_CHANGED",
-    "UI_ERROR_MESSAGE",
-    "CHAT_MSG_LOOT",
-    "CHAT_MSG_SYSTEM",
-    "CHAT_MSG_EMOTE",  -- 玩家表情
-    "CHAT_MSG_MONSTER_EMOTE",  -- 怪物表情（宝箱、根须蟹等消息）
-    "PLAYER_REGEN_DISABLED",
-    "PLAYER_REGEN_ENABLED",
-    "PLAYER_STARTED_MOVING",
-    "PLAYER_STOPPED_MOVING",
-    "LOOT_READY",
-    "LOOT_CLOSED",
-    "BAG_UPDATE",
-    "UNIT_INVENTORY_CHANGED",
-    "UNIT_AURA",
-    "CURSOR_CHANGED",
-    "GET_ITEM_INFO_RECEIVED",  -- For item data delayed loading
-    "PLAYER_MOUNT_DISPLAY_CHANGED",  -- For mount state changes
+	"UNIT_SPELLCAST_START",
+	"UNIT_SPELLCAST_CHANNEL_START",
+	"UNIT_SPELLCAST_CHANNEL_STOP",
+	"UNIT_SPELLCAST_FAILED",
+	"UNIT_SPELLCAST_INTERRUPTED",
+	"UNIT_SPELLCAST_SUCCEEDED",
+	"PLAYER_SOFT_INTERACT_CHANGED",
+	"UI_ERROR_MESSAGE",
+	"CHAT_MSG_LOOT",
+	"CHAT_MSG_SYSTEM",
+	"CHAT_MSG_EMOTE", -- 玩家表情
+	"CHAT_MSG_MONSTER_EMOTE", -- 怪物表情（宝箱、根须蟹等消息）
+	"PLAYER_REGEN_DISABLED",
+	"PLAYER_REGEN_ENABLED",
+	"PLAYER_STARTED_MOVING",
+	"PLAYER_STOPPED_MOVING",
+	"LOOT_READY",
+	"LOOT_CLOSED",
+	"BAG_UPDATE",
+	"UNIT_INVENTORY_CHANGED",
+	"UNIT_AURA",
+	"CURSOR_CHANGED",
+	"GET_ITEM_INFO_RECEIVED", -- For item data delayed loading
+	"PLAYER_MOUNT_DISPLAY_CHANGED", -- For mount state changes
 }
 
 -- ============================================
@@ -45,9 +48,9 @@ local REGISTERED_EVENTS = {
 -- ============================================
 
 local function OnEvent(self, event, ...)
-    if Events[event] then
-        Events[event](...)
-    end
+	if Events[event] then
+		Events[event](...)
+	end
 end
 
 -- ============================================
@@ -55,54 +58,56 @@ end
 -- ============================================
 
 function Events.UNIT_SPELLCAST_START(unit, castGUID, spellID)
-    if Catfish.Core then
-        Catfish.Core:OnSpellCastStart(unit, castGUID, spellID)
-    end
+	if Catfish.Core then
+		Catfish.Core:OnSpellCastStart(unit, castGUID, spellID)
+	end
 end
 
 function Events.UNIT_SPELLCAST_CHANNEL_START(unit, castGUID, spellID)
-    if Catfish.Core then
-        Catfish.Core:OnSpellCastChannelStart(unit, castGUID, spellID)
-    end
+	if Catfish.Core then
+		Catfish.Core:OnSpellCastChannelStart(unit, castGUID, spellID)
+	end
 end
 
 function Events.UNIT_SPELLCAST_CHANNEL_STOP(unit, castGUID, spellID)
-    if Catfish.Core then
-        Catfish.Core:OnSpellCastChannelStop(unit, castGUID, spellID)
-    end
+	if Catfish.Core then
+		Catfish.Core:OnSpellCastChannelStop(unit, castGUID, spellID)
+	end
 end
 
 function Events.UNIT_SPELLCAST_FAILED(unit, castGUID, spellID)
-    if Catfish.Core then
-        Catfish.Core:OnSpellCastFailed(unit, castGUID, spellID)
-    end
+	if Catfish.Core then
+		Catfish.Core:OnSpellCastFailed(unit, castGUID, spellID)
+	end
 end
 
 function Events.UNIT_SPELLCAST_INTERRUPTED(unit, castGUID, spellID)
-    if Catfish.Core then
-        Catfish.Core:OnSpellCastFailed(unit, castGUID, spellID)
-    end
+	if Catfish.Core then
+		Catfish.Core:OnSpellCastFailed(unit, castGUID, spellID)
+	end
 end
 
 -- Giant Bobber toy constants (now in Data/Constants.lua)
 local function GetGiganticBobberConst()
-    return Catfish.Data.Constants.GIGANTIC_BOBBER
+	return Catfish.Data.Constants.GIGANTIC_BOBBER
 end
 
 function Events.UNIT_SPELLCAST_SUCCEEDED(unit, castGUID, spellID)
-    if unit ~= "player" then return end
+	if unit ~= "player" then
+		return
+	end
 
-    local GIGANTIC_BOBBER = GetGiganticBobberConst()
-    -- Check for Gigantic Bobber buff application
-    -- The toy applies a buff with spellID 397827
-    if spellID == GIGANTIC_BOBBER.BUFF_ID then
-        Catfish:Debug("Events: Gigantic Bobber buff applied (spellID:", spellID, ")")
+	local GIGANTIC_BOBBER = GetGiganticBobberConst()
+	-- Check for Gigantic Bobber buff application
+	-- The toy applies a buff with spellID 397827
+	if spellID == GIGANTIC_BOBBER.BUFF_ID then
+		Catfish:Debug("Events: Gigantic Bobber buff applied (spellID:", spellID, ")")
 
-        -- Notify OneKey module to update binding
-        if Catfish.Modules and Catfish.Modules.OneKey then
-            Catfish.Modules.OneKey:OnToyUsed(GIGANTIC_BOBBER.TOY_ID)
-        end
-    end
+		-- Notify OneKey module to update binding
+		if Catfish.Modules and Catfish.Modules.OneKey then
+			Catfish.Modules.OneKey:OnToyUsed(GIGANTIC_BOBBER.TOY_ID)
+		end
+	end
 end
 
 -- ============================================
@@ -110,9 +115,9 @@ end
 -- ============================================
 
 function Events.PLAYER_SOFT_INTERACT_CHANGED(newTarget, oldTarget)
-    if Catfish.Core then
-        Catfish.Core:OnSoftInteractChanged(newTarget, oldTarget)
-    end
+	if Catfish.Core then
+		Catfish.Core:OnSoftInteractChanged(newTarget, oldTarget)
+	end
 end
 
 -- ============================================
@@ -120,78 +125,96 @@ end
 -- ============================================
 
 function Events.UI_ERROR_MESSAGE(errorType, message)
-    -- Check for fishing-related errors
-    if message then
-        local fishingErrors = {
-            "Cannot do that while moving",
-            "You can't do that yet",
-            "Spell is not ready yet",
-            "You are moving",
-        }
+	-- Check for fishing-related errors
+	if message then
+		local fishingErrors = {
+			"Cannot do that while moving",
+			"You can't do that yet",
+			"Spell is not ready yet",
+			"You are moving",
+		}
 
-        for _, err in ipairs(fishingErrors) do
-            if message:find(err) then
-                if Catfish.Core and Catfish.Core:GetState() ~= Catfish.Core.State.IDLE then
-                    Catfish.Core:SetState(Catfish.Core.State.IDLE)
-                end
-                break
-            end
-        end
-    end
+		for _, err in ipairs(fishingErrors) do
+			if message:find(err) then
+				if Catfish.Core and Catfish.Core:GetState() ~= Catfish.Core.State.IDLE then
+					Catfish.Core:SetState(Catfish.Core.State.IDLE)
+				end
+				break
+			end
+		end
+	end
 end
 
 -- ============================================
 -- Loot Events
 -- ============================================
 
-function Events.CHAT_MSG_LOOT(message, playerName, languageName, channelName, playerName2, specialFlags, zoneChannelID, channelIndex, channelBaseName, unused, lineID, senderGUID, senderName)
-    -- Use pcall to handle tainted strings in instances
-    local ok, isPlayer = pcall(function()
-        return playerName == Catfish.API:GetPlayerName()
-    end)
-    -- Parse loot message only if it's the player's loot
-    if ok and isPlayer then
-        Events:ParseLootMessage(message)
-    end
+function Events.CHAT_MSG_LOOT(
+	message,
+	playerName,
+	languageName,
+	channelName,
+	playerName2,
+	specialFlags,
+	zoneChannelID,
+	channelIndex,
+	channelBaseName,
+	unused,
+	lineID,
+	senderGUID,
+	senderName
+)
+	-- Use pcall to handle tainted strings in instances
+	local ok, isPlayer = pcall(function()
+		return playerName == Catfish.API:GetPlayerName()
+	end)
+	-- Parse loot message only if it's the player's loot
+	if ok and isPlayer then
+		Events:ParseLootMessage(message)
+	end
 end
 
 function Events:ParseLootMessage(message)
-    -- Only record if this was fishing loot
-    if not Catfish.Modules.Statistics or not Catfish.Modules.Statistics.isFishingLoot then
-        return
-    end
+	-- Only record if this was fishing loot
+	if not Catfish.Modules.Statistics or not Catfish.Modules.Statistics.isFishingLoot then
+		return
+	end
 
-    -- Pattern: "You receive loot: [|Hitem:...|h[Item Name]|h]"
-    local itemLink = message:match("|c%x+|Hitem:.-|h%[(.-)%]|h|r")
-    if itemLink then
-        local itemID = itemLink:match("item:(%d+)")
-        if itemID then
-            itemID = tonumber(itemID)
-            Catfish:Debug("Looted item:", itemID)
+	-- Pattern: "You receive loot: [|Hitem:...|h[Item Name]|h]"
+	local itemLink = message:match("|c%x+|Hitem:.-|h%[(.-)%]|h|r")
+	if itemLink then
+		local itemID = itemLink:match("item:(%d+)")
+		if itemID then
+			itemID = tonumber(itemID)
+			Catfish:Debug("Looted item:", itemID)
 
-            -- Record statistics
-            Catfish.Modules.Statistics:RecordCatch(itemID)
-        end
-    end
+			-- Record statistics
+			Catfish.Modules.Statistics:RecordCatch(itemID)
+		end
+	end
 end
 
 function Events.LOOT_READY(autoloot)
-    Catfish:Debug("Loot ready, autoloot:", autoloot)
+	Catfish:Debug("Loot ready, autoloot:", autoloot)
 
-    -- Auto-loot is handled by the game's auto-loot setting
-    -- We just need to track what we caught
+	-- Auto-loot is handled by the game's auto-loot setting
+	-- We just need to track what we caught
 
-    if Catfish.Modules.Statistics then
-        Catfish.Modules.Statistics:OnLootReady()
-    end
+	if Catfish.Modules.Statistics then
+		Catfish.Modules.Statistics:OnLootReady()
+	end
 end
 
 function Events.LOOT_CLOSED()
-    Catfish:Debug("Loot window closed")
+	Catfish:Debug("Loot window closed")
 
-    if Catfish.Modules.Statistics then
-        Catfish.Modules.Statistics:OnLootClosed()
-    end
+	if Catfish.Core then
+		Catfish.Core:OnLootClosed()
+	end
+
+	if Catfish.Modules.Statistics then
+		Catfish.Modules.Statistics:OnLootClosed()
+	end
 end
 
 -- ============================================
@@ -199,28 +222,28 @@ end
 -- ============================================
 
 function Events.PLAYER_REGEN_DISABLED()
-    Catfish:Debug("Entered combat")
+	Catfish:Debug("Entered combat")
 
-    -- Cancel fishing if active
-    if Catfish.Core and Catfish.Core:IsFishing() then
-        Catfish.Core:CancelFishing()
-    end
+	-- Cancel fishing if active
+	if Catfish.Core and Catfish.Core:IsFishing() then
+		Catfish.Core:CancelFishing()
+	end
 
-    -- Clear keybinding so the key restores its original function
-    if Catfish.Modules.OneKey and Catfish.Modules.OneKey.ClearOverrideBinding then
-        Catfish.Modules.OneKey:ClearOverrideBinding()
-    end
+	-- Clear keybinding so the key restores its original function
+	if Catfish.Modules.OneKey and Catfish.Modules.OneKey.ClearOverrideBinding then
+		Catfish.Modules.OneKey:ClearOverrideBinding()
+	end
 end
 
 function Events.PLAYER_REGEN_ENABLED()
-    Catfish:Debug("Left combat")
+	Catfish:Debug("Left combat")
 
-    -- Restore keybinding after combat (delayed to avoid taint)
-    C_Timer.After(0.1, function()
-        if Catfish.Modules.OneKey and Catfish.Modules.OneKey.UpdateBinding then
-            Catfish.Modules.OneKey:UpdateBinding(11)
-        end
-    end)
+	-- Restore keybinding after combat (delayed to avoid taint)
+	C_Timer.After(0.1, function()
+		if Catfish.Modules.OneKey and Catfish.Modules.OneKey.UpdateBinding then
+			Catfish.Modules.OneKey:UpdateBinding(11)
+		end
+	end)
 end
 
 -- ============================================
@@ -261,10 +284,10 @@ end
 -- ============================================
 
 function Events.PLAYER_MOUNT_DISPLAY_CHANGED()
-    -- 坐骑状态变化时更新绑定
-    if Catfish.Modules.OneKey and Catfish.Modules.OneKey.UpdateBinding then
-        Catfish.Modules.OneKey:UpdateBinding(14)
-    end
+	-- 坐骑状态变化时更新绑定
+	if Catfish.Modules.OneKey and Catfish.Modules.OneKey.UpdateBinding then
+		Catfish.Modules.OneKey:UpdateBinding(14)
+	end
 end
 
 -- ============================================
@@ -274,49 +297,85 @@ end
 local bagUpdateTimer = nil
 
 function Events.BAG_UPDATE(bagID)
-    -- Debounce: delay execution to merge multiple BAG_UPDATE events
-    -- WoW fires BAG_UPDATE multiple times in quick succession (one per bag)
-    if bagUpdateTimer then
-        bagUpdateTimer:Cancel()
-    end
-    bagUpdateTimer = C_Timer.NewTimer(0.1, function()
-        bagUpdateTimer = nil
-        -- Equipment module may need to rescan
-        if Catfish.Modules.Equipment then
-            Catfish.Modules.Equipment:OnBagUpdate(bagID)
-        end
+	-- Debounce: delay execution to merge multiple BAG_UPDATE events
+	-- WoW fires BAG_UPDATE multiple times in quick succession (one per bag)
+	if bagUpdateTimer then
+		bagUpdateTimer:Cancel()
+	end
+	bagUpdateTimer = C_Timer.NewTimer(0.1, function()
+		bagUpdateTimer = nil
+		-- Equipment module may need to rescan
+		if Catfish.Modules.Equipment then
+			Catfish.Modules.Equipment:OnBagUpdate(bagID)
+		end
 
-        -- Lure manager may need to rescan
-        if Catfish.Modules.LureManager then
-            Catfish.Modules.LureManager:OnBagUpdate(bagID)
-        end
-    end)
+		-- Lure manager may need to rescan
+		if Catfish.Modules.LureManager then
+			Catfish.Modules.LureManager:OnBagUpdate(bagID)
+		end
+	end)
 end
 
 function Events.UNIT_INVENTORY_CHANGED(unit)
-    if unit == "player" then
-        if Catfish.Modules.Equipment then
-            Catfish.Modules.Equipment:OnInventoryChanged()
-        end
-    end
+	if unit == "player" then
+		if Catfish.Modules.Equipment then
+			Catfish.Modules.Equipment:OnInventoryChanged()
+		end
+	end
 end
 
-function Events.UNIT_AURA(unit)
-    if unit == "player" then
-        if Catfish.Modules.LureManager then
-            Catfish.Modules.LureManager:OnAuraChanged()
-        end
+function Events.UNIT_AURA(unit, info)
+	if unit ~= "player" then
+		return
+	end
 
-        -- 如果获得木筏BUFF且正在游泳，启动状态轮询
-        -- 目的：检测从游泳状态到站上木筏的变化（没有事件触发）
-        if Catfish.Modules.ItemManager and Catfish.Core.StatusPoller then
-            local hasRaftBuff = Catfish.Modules.ItemManager:HasRaftBuff()
-            if hasRaftBuff and IsSwimming() then
-                Catfish:Debug("UNIT_AURA: has raft buff and swimming, start polling")
-                Catfish.Core.StatusPoller:StartPolling("raft-buff-gained")
-            end
-        end
+	if Catfish.Modules.LureManager then
+		Catfish.Modules.LureManager:OnAuraChanged()
+	end
+
+	local config = Catfish.db.toys
+
+	-- 战斗中不检查光环的获取以及丢失
+	if InCombatLockdown() then
+		return
+	end
+
+	-- 如果获取钓鱼筏BUFF，重新刷新一下绑定
+	-- if info.addedAuras then
+	-- 	for _, aura in ipairs(info.addedAuras) do
+	-- 		for _, spellID in ipairs(Catfish.Data.Constants.RAFT_SPELL_IDS) do
+	-- 			if aura.spellId == spellID then
+	-- 				Catfish:Debug("Gain raft buff: " .. aura.spellId)
+	-- 				playerAuras[aura.auraInstanceID] = aura.spellId
+	-- 				Catfish.Modules.OneKey:UpdateBinding("+Raft")
+	-- 				return
+	-- 			end
+	-- 		end
+	-- end
+    if isRaftBuffGained(info) then
+        Catfish.Modules.OneKey:UpdateBinding("+Raft")
+        return
     end
+
+	-- 同样的如果失去了钓鱼筏BUFF，一样刷新下绑定
+    if isRaftBuffLost(info) then
+        Catfish.Modules.OneKey:UpdateBinding("-Raft")
+        return
+    end
+	-- if info.removedAuraInstanceIDs then
+	-- 	for _, instanceId in pairs(info.removedAuraInstanceIDs) do
+	-- 		if playerAuras[instanceId] then
+	-- 			for _, spellID in ipairs(Catfish.Data.Constants.RAFT_SPELL_IDS) do
+	-- 				if playerAuras[instanceId] then
+	-- 					Catfish:Debug("Remove raft buff: " .. playerAuras[instanceId])
+	-- 					playerAuras[instanceId] = nil
+	-- 					Catfish.Modules.OneKey:UpdateBinding("-Raft")
+	-- 					return
+	-- 				end
+	-- 			end
+	-- 		end
+	-- 	end
+	-- end
 end
 
 -- ============================================
@@ -324,10 +383,10 @@ end
 -- ============================================
 
 function Events.CURSOR_CHANGED(cursorType, oldCursorType)
-    -- Used for toy selection UI
-    if Catfish.UI.ToySelector and Catfish.UI.ToySelector:IsShown() then
-        Catfish.UI.ToySelector:OnCursorChanged(cursorType)
-    end
+	-- Used for toy selection UI
+	if Catfish.UI.ToySelector and Catfish.UI.ToySelector:IsShown() then
+		Catfish.UI.ToySelector:OnCursorChanged(cursorType)
+	end
 end
 
 -- ============================================
@@ -335,44 +394,72 @@ end
 -- ============================================
 
 function Events.CHAT_MSG_SYSTEM(message)
-    -- Use pcall to handle tainted strings in instances
-    local ok, result = pcall(function()
-        -- Check for skill increase
-        if message:find("Your skill in Fishing has increased to") then
-            local newSkill = message:match("increased to (%d+)")
-            if newSkill then
-                Catfish:Debug("Fishing skill increased to:", newSkill)
-            end
-        end
-    end)
-    -- Silently ignore errors from tainted strings
+	-- Use pcall to handle tainted strings in instances
+	local ok, result = pcall(function()
+		-- Check for skill increase
+		if message:find("Your skill in Fishing has increased to") then
+			local newSkill = message:match("increased to (%d+)")
+			if newSkill then
+				Catfish:Debug("Fishing skill increased to:", newSkill)
+			end
+		end
+	end)
+	-- Silently ignore errors from tainted strings
 end
 
 -- ============================================
 -- Emote Events (宝箱出现消息)
 -- ============================================
 
-function Events.CHAT_MSG_EMOTE(message, playerName, languageName, channelName, playerName2, specialFlags, zoneChannelID, channelIndex, channelBaseName, unused, lineID, senderGUID, senderName)
-    -- 玩家表情，暂不处理
+function Events.CHAT_MSG_EMOTE(
+	message,
+	playerName,
+	languageName,
+	channelName,
+	playerName2,
+	specialFlags,
+	zoneChannelID,
+	channelIndex,
+	channelBaseName,
+	unused,
+	lineID,
+	senderGUID,
+	senderName
+)
+	-- 玩家表情，暂不处理
 end
 
 -- ============================================
 -- Monster Emote Events (宝箱出现消息)
 -- ============================================
 
-function Events.CHAT_MSG_MONSTER_EMOTE(message, playerName, languageName, channelName, playerName2, specialFlags, zoneChannelID, channelIndex, channelBaseName, unused, lineID, senderGUID, senderName)
-    -- Use pcall to handle tainted strings in instances
-    local ok, result = pcall(function()
-        local playerName = Catfish.API:GetPlayerName()
+function Events.CHAT_MSG_MONSTER_EMOTE(
+	message,
+	playerName,
+	languageName,
+	channelName,
+	playerName2,
+	specialFlags,
+	zoneChannelID,
+	channelIndex,
+	channelBaseName,
+	unused,
+	lineID,
+	senderGUID,
+	senderName
+)
+	-- Use pcall to handle tainted strings in instances
+	local ok, result = pcall(function()
+		local playerName = Catfish.API:GetPlayerName()
 
-        -- 宝箱消息格式：一个藏宝箱为{角色名}出现了！
-        if message:find("藏宝箱") and message:find(playerName) and message:find("出现了") then
-            if Catfish.Modules.Statistics then
-                Catfish.Modules.Statistics:OnTreasureChestSpawned()
-            end
-        end
-    end)
-    -- Silently ignore errors from tainted strings
+		-- 宝箱消息格式：一个藏宝箱为{角色名}出现了！
+		if message:find("藏宝箱") and message:find(playerName) and message:find("出现了") then
+			if Catfish.Modules.Statistics then
+				Catfish.Modules.Statistics:OnTreasureChestSpawned()
+			end
+		end
+	end)
+	-- Silently ignore errors from tainted strings
 end
 
 -- ============================================
@@ -380,21 +467,21 @@ end
 -- ============================================
 
 function Events.GET_ITEM_INFO_RECEIVED(itemID, success)
-    local GIGANTIC_BOBBER = Catfish.Data.Constants.GIGANTIC_BOBBER
-    -- When Gigantic Bobber item data is received, update caches
-    if itemID == GIGANTIC_BOBBER.TOY_ID and success then
-        local itemName = GetItemInfo(itemID)
-        Catfish:Debug("GET_ITEM_INFO_RECEIVED: Gigantic Bobber data loaded:", itemName)
+	local GIGANTIC_BOBBER = Catfish.Data.Constants.GIGANTIC_BOBBER
+	-- When Gigantic Bobber item data is received, update caches
+	if itemID == GIGANTIC_BOBBER.TOY_ID and success then
+		local itemName = GetItemInfo(itemID)
+		Catfish:Debug("GET_ITEM_INFO_RECEIVED: Gigantic Bobber data loaded:", itemName)
 
-        -- Update ItemManager cache
-        if Catfish.Modules and Catfish.Modules.ItemManager then
-            Catfish.Modules.ItemManager:UpdateGiganticBobberCache()
-        end
-        -- Update OneKey binding
-        if Catfish.Modules and Catfish.Modules.OneKey then
-            Catfish.Modules.OneKey:UpdateBinding(15)
-        end
-    end
+		-- Update ItemManager cache
+		if Catfish.Modules and Catfish.Modules.ItemManager then
+			Catfish.Modules.ItemManager:UpdateGiganticBobberCache()
+		end
+		-- Update OneKey binding
+		if Catfish.Modules and Catfish.Modules.OneKey then
+			Catfish.Modules.OneKey:UpdateBinding(15)
+		end
+	end
 end
 
 -- ============================================
@@ -402,18 +489,18 @@ end
 -- ============================================
 
 function Events:Init()
-    -- Create event frame
-    eventFrame = CreateFrame("Frame")
+	-- Create event frame
+	eventFrame = CreateFrame("Frame")
 
-    -- Register all events
-    for _, event in ipairs(REGISTERED_EVENTS) do
-        eventFrame:RegisterEvent(event)
-    end
+	-- Register all events
+	for _, event in ipairs(REGISTERED_EVENTS) do
+		eventFrame:RegisterEvent(event)
+	end
 
-    -- Set event handler
-    eventFrame:SetScript("OnEvent", OnEvent)
+	-- Set event handler
+	eventFrame:SetScript("OnEvent", OnEvent)
 
-    Catfish:Debug("Events module initialized, registered", #REGISTERED_EVENTS, "events")
+	Catfish:Debug("Events module initialized, registered", #REGISTERED_EVENTS, "events")
 end
 
 -- ============================================
@@ -421,7 +508,44 @@ end
 -- ============================================
 
 function Events:TriggerEvent(event, ...)
-    if self[event] then
-        self[event](...)
+	if self[event] then
+		self[event](...)
+	end
+end
+
+-- ============================================
+-- Help Functions
+-- ============================================
+function isRaftBuffGained(info)
+	if not info or not info.addedAuras then
+		return
+	end
+	for _, aura in ipairs(info.addedAuras) do
+		for _, spellID in ipairs(Catfish.Data.Constants.RAFT_SPELL_IDS) do
+			if aura.spellId == spellID then
+				Catfish:Debug("Gain raft buff: " .. aura.spellId)
+				playerAuras[aura.auraInstanceID] = aura.spellId
+				return true
+			end
+		end
+	end
+	return false
+end
+
+function isRaftBuffLost(info)
+    if not info or not info.removedAuraInstanceIDs then
+        return
     end
+    for _, instanceId in pairs(info.removedAuraInstanceIDs) do
+        if playerAuras[instanceId] then
+            for _, spellID in ipairs(Catfish.Data.Constants.RAFT_SPELL_IDS) do
+                if playerAuras[instanceId] then
+                    Catfish:Debug("Lost raft buff: " .. playerAuras[instanceId])
+                    playerAuras[instanceId] = nil
+                    return true
+                end
+            end
+        end
+    end
+    return false
 end

@@ -274,7 +274,7 @@ frame:SetScript("OnEvent", function(self, event, arg1, ...)
             -- Catfish:Debug("Fishing skill found:", fishingSpell)
         else
             Catfish.hasFishingSkill = false
-            Catfish:Debug("No fishing skill detected (or spell data not loaded yet)")
+            Catfish:Print("No fishing skill detected (or spell data not loaded yet)")
         end
 
         -- Initialize toys data

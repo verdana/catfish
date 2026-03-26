@@ -34,31 +34,7 @@ end
 
 -- 注意：木筏需要读条，属于GCD物品，放在GCD检查中处理
 
--- 检查是否需要巨型鱼漂
-local function NeedsGiganticBobber()
-    if not Catfish.db.useGiganticBobber then
-        return false
-    end
 
-    local GIGANTIC_BOBBER = GetConstants().GIGANTIC_BOBBER
-
-    -- 已有buff
-    if Catfish.API:UnitHasBuff("player", GIGANTIC_BOBBER.BUFF_ID) then
-        return false
-    end
-
-    -- 没有玩具
-    if not Catfish.API:PlayerHasToy(GIGANTIC_BOBBER.TOY_ID) then
-        return false
-    end
-
-    -- 冷却中
-    if Catfish.API:GetToyCooldown(GIGANTIC_BOBBER.TOY_ID) > 0 then
-        return false
-    end
-
-    return true
-end
 
 -- 获取巨型鱼漂名称
 local GIGANTIC_BOBBER_NAME = nil
@@ -101,34 +77,6 @@ end
 -- ============================================
 -- GCD Item Checks (需要读条的物品)
 -- ============================================
-
--- 检查是否需要木筏（需要读条1.5秒）
-local function NeedsRaft()
-    local config = Catfish.db.toys
-    Catfish:Debug("NeedsRaft: raftMode=", tostring(config.raftMode), " isSwimming=", tostring(IsSwimming()))
-
-    if config.raftMode == "none" then
-        return false
-    end
-    if not IsSwimming() then
-        return false
-    end
-
-    -- 检查是否已有木筏buff，且剩余时间大于60秒
-    for _, spellID in ipairs(GetConstants().RAFT_SPELL_IDS) do
-        local hasBuff, remaining = Catfish.API:UnitHasBuff("player", spellID)
-        if hasBuff then
-            -- 如果buff剩余时间大于60秒，不需要重新使用
-            if remaining > 60 then
-                Catfish:Debug("NeedsRaft: already has raft buff, remaining:", remaining)
-                return false
-            end
-        end
-    end
-
-    Catfish:Debug("NeedsRaft: returning true")
-    return true
-end
 
 -- 获取木筏名称
 local function GetRaftName()
@@ -274,7 +222,7 @@ function ItemManager:GetGCDItemToUse()
     -- 木筏优先级最高（游泳时必须先有木筏）
     if NeedsRaft() then
         local name = GetRaftName()
-        Catfish:Debug("GetGCDItemToUse: NeedsRaft=true, name=", tostring(name))
+        Catfish:Print("GetGCDItemToUse: NeedsRaft=true, name=", tostring(name))
         if name then return name end
         -- 如果需要木筏但木筏不可用（冷却中），返回特殊标记
         -- 这样调用方知道要等待而不是钓鱼
@@ -284,6 +232,7 @@ function ItemManager:GetGCDItemToUse()
     if NeedsAmaniWard() then
         return GetAmaniWardName()
     end
+
     if NeedsTWWBait() then
         return GetTWWBaitName()
     end
@@ -308,6 +257,22 @@ function ItemManager:GenerateGCDItemMacro()
         return "/use " .. item
     end
     return nil
+end
+
+-- 生成钓鱼筏宏
+function ItemManager:BuildDraftMacro()
+    local name = GetRaftName()
+    if name then
+        return "/use " .. name
+    end
+end
+
+-- 生成巨型鱼漂宏
+function ItemManager:BuildGiganticBobberMacro()
+    local name = GetGiganticBobberName()
+    if name then
+        return "/use " .. name
+    end
 end
 
 -- 生成钓鱼宏（玩具物品 + 钓鱼）
@@ -342,4 +307,55 @@ end
 
 function ItemManager:Init()
     Catfish:Debug("ItemManager module initialized")
+end
+
+-- 检查是否需要木筏
+function ItemManager:NeedsRaft()
+    local config = Catfish.db.toys
+    Catfish:Print("NeedsRaft: raftMode=", tostring(config.raftMode), " isSwimming=", tostring(IsSwimming()))
+
+    if config.raftMode == "none" then
+        return false
+    end
+
+    -- 检查是否已有木筏buff，且剩余时间大于60秒
+    for _, spellID in ipairs(GetConstants().RAFT_SPELL_IDS) do
+        local hasBuff, remaining = Catfish.API:UnitHasBuff("player", spellID)
+        if hasBuff then
+            -- 如果buff剩余时间大于60秒，不需要重新使用
+            if remaining > 60 then
+                Catfish:Debug("NeedsRaft: already has raft buff, remaining:", remaining)
+                return false
+            end
+        end
+    end
+
+    Catfish:Debug("NeedsRaft: returning true")
+    return true
+end
+
+-- 检查是否需要巨型鱼漂
+function ItemManager:NeedsGiganticBobber()
+    if not Catfish.db.useGiganticBobber then
+        return false
+    end
+
+    local GIGANTIC_BOBBER = GetConstants().GIGANTIC_BOBBER
+
+    -- 已有buff
+    if Catfish.API:UnitHasBuff("player", GIGANTIC_BOBBER.BUFF_ID) then
+        return false
+    end
+
+    -- 没有玩具
+    if not Catfish.API:PlayerHasToy(GIGANTIC_BOBBER.TOY_ID) then
+        return false
+    end
+
+    -- 冷却中
+    if Catfish.API:GetToyCooldown(GIGANTIC_BOBBER.TOY_ID) > 0 then
+        return false
+    end
+
+    return true
 end

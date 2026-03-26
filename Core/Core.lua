@@ -11,10 +11,10 @@ Catfish.Core = Core
 -- ============================================
 
 local State = {
-    IDLE = "IDLE",
-    CASTING = "CASTING",
-    WAITING = "WAITING",
-    REELING = "REELING",
+    IDLE = "IDLE",          -- 空闲状态
+    CASTING = "CASTING",    -- 读条中
+    WAITING = "WAITING",    -- 等待收杆
+    REELING = "REELING",    -- 收杆中
 }
 
 Core.State = State
@@ -93,7 +93,7 @@ function Core:OnEnterState(state, ...)
 
     elseif state == State.WAITING then
         self:EnterWaiting(...)
- 
+
     end
 end
 
@@ -106,7 +106,7 @@ function Core:OnExitState(state)
 
     elseif state == State.WAITING then
         self:ExitWaiting()
- 
+
     end
 end
 
@@ -176,7 +176,7 @@ end
 -- ============================================
 -- REELING State
 -- ============================================
- 
+
 function Core:CancelFishing()
     Catfish:Debug("CancelFishing called, state:", self.currentState)
 
@@ -262,8 +262,17 @@ function Core:OnSpellCastChannelStop(unit, castGUID, spellID)
     -- Don't clear isFishingLoot here - LOOT_READY may come after
     -- The flag is cleared in Statistics:OnLootClosed instead
     if self.currentState == State.WAITING then
-        Catfish:Debug("Channel stopped in WAITING - transitioning to IDLE")
-        self:SetState(State.IDLE)
+        Catfish:Debug("Channel stopped in WAITING - transitioning to REELING")
+        self:SetState(State.REELING)
+
+        -- 启动短计时器检测
+        self.reelStartTime = GetTime()
+        C_Timer.After(0.5, function()
+          if self.currentState == State.REELING then
+              -- 超时无 LOOT_READY，说明是被取消了
+              self:SetState(State.IDLE)
+          end
+      end)
     end
 end
 
@@ -288,7 +297,11 @@ function Core:OnSoftInteractChanged(newTarget, oldTarget)
         Catfish.Modules.OneKey:OnStateChanged()
     end
 end
- 
+
+function Core:OnLootClosed()
+    self:SetState(State.IDLE)
+end
+
 
 -- ============================================
 -- Getters
