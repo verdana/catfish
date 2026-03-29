@@ -11,6 +11,7 @@ local eventFrame = nil
 
 -- 钓鱼相关的BUFF
 local playerAuras = {}
+local giganticBobberAuras = {}
 
 -- ============================================
 -- Event Registration
@@ -351,6 +352,30 @@ function Events.UNIT_AURA(unit, info)
         Catfish.Modules.OneKey:UpdateBinding("-Raft")
         return
     end
+
+	-- 如果钓鱼筏BUFF时间被刷新（再次使用玩具），也更新绑定
+	if isRaftBuffRefreshed(info) then
+		Catfish.Modules.OneKey:UpdateBinding("RefreshRaft")
+		return
+	end
+
+	-- 巨型鱼漂 BUFF 获取
+	if isGiganticBobberBuffGained(info) then
+		Catfish.Modules.OneKey:UpdateBinding("+GiganticBobber")
+		return
+	end
+
+	-- 巨型鱼漂 BUFF 失去
+	if isGiganticBobberBuffLost(info) then
+		Catfish.Modules.OneKey:UpdateBinding("-GiganticBobber")
+		return
+	end
+
+	-- 巨型鱼漂 BUFF 刷新
+	if isGiganticBobberBuffRefreshed(info) then
+		Catfish.Modules.OneKey:UpdateBinding("RefreshGiganticBobber")
+		return
+	end
 end
 
 -- ============================================
@@ -520,6 +545,66 @@ function isRaftBuffLost(info)
                     return true
                 end
             end
+        end
+    end
+    return false
+end
+
+function isRaftBuffRefreshed(info)
+    if not info or not info.updatedAuraInstanceIDs then
+        return false
+    end
+    for _, instanceId in pairs(info.updatedAuraInstanceIDs) do
+        if playerAuras[instanceId] then
+            -- 这个 auraInstanceID 是我们跟踪的钓鱼筏 BUFF
+            Catfish:Debug("Raft buff refreshed: " .. playerAuras[instanceId])
+            return true
+        end
+    end
+    return false
+end
+
+-- ============================================
+-- Gigantic Bobber Buff Detection
+-- ============================================
+
+function isGiganticBobberBuffGained(info)
+    if not info or not info.addedAuras then
+        return false
+    end
+    local buffID = Catfish.Data.Constants.GIGANTIC_BOBBER.BUFF_ID
+    for _, aura in ipairs(info.addedAuras) do
+        if aura.spellId == buffID then
+            Catfish:Debug("Gain gigantic bobber buff: " .. aura.spellId)
+            giganticBobberAuras[aura.auraInstanceID] = aura.spellId
+            return true
+        end
+    end
+    return false
+end
+
+function isGiganticBobberBuffLost(info)
+    if not info or not info.removedAuraInstanceIDs then
+        return false
+    end
+    for _, instanceId in pairs(info.removedAuraInstanceIDs) do
+        if giganticBobberAuras[instanceId] then
+            Catfish:Debug("Lost gigantic bobber buff: " .. giganticBobberAuras[instanceId])
+            giganticBobberAuras[instanceId] = nil
+            return true
+        end
+    end
+    return false
+end
+
+function isGiganticBobberBuffRefreshed(info)
+    if not info or not info.updatedAuraInstanceIDs then
+        return false
+    end
+    for _, instanceId in pairs(info.updatedAuraInstanceIDs) do
+        if giganticBobberAuras[instanceId] then
+            Catfish:Debug("Gigantic bobber buff refreshed: " .. giganticBobberAuras[instanceId])
+            return true
         end
     end
     return false

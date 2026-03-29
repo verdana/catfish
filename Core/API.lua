@@ -313,7 +313,7 @@ end
 
 function API:GetToyCooldown(itemID)
     local start, duration, enable = C_Container.GetItemCooldown(itemID)
-    if start == 0 then
+    if start == nil or start == 0 then
         return 0
     end
     return start + duration - GetTime()

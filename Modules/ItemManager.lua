@@ -312,7 +312,7 @@ end
 -- 检查是否需要木筏
 function ItemManager:NeedsRaft()
     local config = Catfish.db.toys
-    Catfish:Print("NeedsRaft: raftMode=", tostring(config.raftMode), " isSwimming=", tostring(IsSwimming()))
+    -- Catfish:Print("NeedsRaft: raftMode=", tostring(config.raftMode), " isSwimming=", tostring(IsSwimming()))
 
     if config.raftMode == "none" then
         return false
@@ -324,13 +324,11 @@ function ItemManager:NeedsRaft()
         if hasBuff then
             -- 如果buff剩余时间大于60秒，不需要重新使用
             if remaining > 60 then
-                Catfish:Debug("NeedsRaft: already has raft buff, remaining:", remaining)
+                -- Catfish:Debug("NeedsRaft: already has raft buff, remaining:", remaining)
                 return false
             end
         end
     end
-
-    Catfish:Debug("NeedsRaft: returning true")
     return true
 end
 
