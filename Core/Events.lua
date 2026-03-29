@@ -341,17 +341,6 @@ function Events.UNIT_AURA(unit, info)
 	end
 
 	-- 如果获取钓鱼筏BUFF，重新刷新一下绑定
-	-- if info.addedAuras then
-	-- 	for _, aura in ipairs(info.addedAuras) do
-	-- 		for _, spellID in ipairs(Catfish.Data.Constants.RAFT_SPELL_IDS) do
-	-- 			if aura.spellId == spellID then
-	-- 				Catfish:Debug("Gain raft buff: " .. aura.spellId)
-	-- 				playerAuras[aura.auraInstanceID] = aura.spellId
-	-- 				Catfish.Modules.OneKey:UpdateBinding("+Raft")
-	-- 				return
-	-- 			end
-	-- 		end
-	-- end
     if isRaftBuffGained(info) then
         Catfish.Modules.OneKey:UpdateBinding("+Raft")
         return
@@ -362,20 +351,6 @@ function Events.UNIT_AURA(unit, info)
         Catfish.Modules.OneKey:UpdateBinding("-Raft")
         return
     end
-	-- if info.removedAuraInstanceIDs then
-	-- 	for _, instanceId in pairs(info.removedAuraInstanceIDs) do
-	-- 		if playerAuras[instanceId] then
-	-- 			for _, spellID in ipairs(Catfish.Data.Constants.RAFT_SPELL_IDS) do
-	-- 				if playerAuras[instanceId] then
-	-- 					Catfish:Debug("Remove raft buff: " .. playerAuras[instanceId])
-	-- 					playerAuras[instanceId] = nil
-	-- 					Catfish.Modules.OneKey:UpdateBinding("-Raft")
-	-- 					return
-	-- 				end
-	-- 			end
-	-- 		end
-	-- 	end
-	-- end
 end
 
 -- ============================================

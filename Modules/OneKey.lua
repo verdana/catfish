@@ -142,7 +142,11 @@ function OneKey:UpdateBinding(id)
         return
     end
 
-
+    -- 休眠模式下不执行任何功能性操作
+    if Catfish.db.sleepMode then
+        Catfish:Debug("OneKey: sleep mode active, skip binding")
+        return
+    end
 
     -- 基本检查
     if not self.autoButton or not self.autoButton:IsVisible() or not self.keybind then

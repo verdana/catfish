@@ -204,9 +204,8 @@ function Core:OnSpellCastStart(unit, castGUID, spellID)
         Catfish.Modules.Statistics:RecordCast()
     end
 
-    -- Use configured toys (rafts, bobbers, extra toys) if auto-toys is enabled
-    -- This happens during the cast, most toys can be used without interrupting
-    if Catfish.db.autoToys and Catfish.Modules.Toys then
+    -- 休眠模式下不自动使用玩具
+    if not Catfish.db.sleepMode and Catfish.db.autoToys and Catfish.Modules.Toys then
         Catfish.Modules.Toys:UseConfiguredToys()
     end
 
@@ -240,9 +239,8 @@ function Core:OnSpellCastChannelStart(unit, castGUID, spellID)
         end
     end
 
-    -- Use configured toys (rafts, bobbers, extra toys) if auto-toys is enabled
-    -- This handles the case where channel starts directly (some fishing modes)
-    if Catfish.db.autoToys and Catfish.Modules.Toys then
+    -- 休眠模式下不自动使用玩具
+    if not Catfish.db.sleepMode and Catfish.db.autoToys and Catfish.Modules.Toys then
         Catfish.Modules.Toys:UseConfiguredToys()
     end
 

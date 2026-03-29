@@ -238,6 +238,11 @@ end
 -- ============================================
 
 function Toys:UseConfiguredToys()
+    -- 休眠模式下不执行任何功能性操作
+    if Catfish.db.sleepMode then
+        return
+    end
+
     -- Use raft if swimming
     if Catfish.API:IsPlayerSwimming() then
         self:UseRaft()
