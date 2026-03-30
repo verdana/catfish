@@ -39,9 +39,14 @@ end
 function StatsHUD:CreateFrame()
     if self.frame then return end
 
-    -- Create main frame
+    -- Width constants
+    self.MIN_WIDTH = 300
+    self.MAX_WIDTH = 500
+    self.PADDING_X = 32  -- Left + right padding
+
+    -- Create main frame (initial width, will be adjusted dynamically)
     local frame = CreateFrame("Frame", "CatfishStatsHUD", UIParent, "BackdropTemplate")
-    frame:SetSize(250, 150)
+    frame:SetSize(self.MIN_WIDTH, 150)
 
     -- Restore position or use default
     local pos = Catfish.charDB.hudPosition
@@ -70,12 +75,12 @@ function StatsHUD:CreateFrame()
         tile = true, tileSize = 16, edgeSize = 16,
         insets = { left = 4, right = 4, top = 4, bottom = 4 }
     })
-    frame:SetBackdropColor(0, 0, 0, 0.7)
+    frame:SetBackdropColor(0.1, 0.1, 0.1, 0.6)
     frame:SetBackdropBorderColor(0.4, 0.4, 0.4, 1)
 
-    -- Title
+    -- Title (left-aligned, same padding as content lines)
     local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    title:SetPoint("TOP", frame, "TOP", 0, -8)
+    title:SetPoint("TOP", frame, "TOP", 12, -16)
     title:SetText("|cFF00FF00Catfish 钓鱼统计|r")
     frame.title = title
 
@@ -193,7 +198,8 @@ function StatsHUD:Update()
     lines[lineIndex] = summaryLine
     lineIndex = lineIndex + 1
 
-    -- Update frame text
+    -- Update frame text and calculate max width
+    local maxWidth = 0
     for i, line in ipairs(self.frame.lines) do
         if lines[i] then
             line:SetText(lines[i])
@@ -204,10 +210,19 @@ function StatsHUD:Update()
             else
                 line:SetJustifyH("LEFT")
             end
+            -- Calculate line width
+            local lineWidth = line:GetStringWidth()
+            if lineWidth > maxWidth then
+                maxWidth = lineWidth
+            end
         else
             line:Hide()
         end
     end
+
+    -- Adjust frame width based on content (with min/max limits)
+    local finalWidth = math.max(self.MIN_WIDTH, math.min(self.MAX_WIDTH, maxWidth + self.PADDING_X))
+    self.frame:SetWidth(finalWidth)
 
     -- Adjust frame height (18px per line + header + padding)
     local height = 30 + lineIndex * 18 + 10

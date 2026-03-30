@@ -180,13 +180,13 @@ end
 
 -- Print function
 function Catfish:Print(...)
-    print("|cFF00FF00[Catfish]|r", ...)
+    print("|cFF00FF00[Catfish]|r ", ...)
 end
 
 -- Debug print
 function Catfish:Debug(...)
     if self.db and self.db.debugMode then
-        print("|cFFFFAA00[Catfish]|r", ...)
+        print("|cFFFFAA00[Catfish]|r ", ...)
     end
 end
 
