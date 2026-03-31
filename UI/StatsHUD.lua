@@ -282,7 +282,8 @@ end
 -- ============================================
 
 function StatsHUD:SetEnabled(enabled)
-    if enabled then
+    -- Don't show if in sleep mode
+    if enabled and not Catfish.db.sleepMode then
         self:Show()
     else
         self:Hide()
@@ -297,8 +298,8 @@ function StatsHUD:Init()
     -- Create frame but don't show yet
     self:CreateFrame()
 
-    -- Check initial setting
-    if Catfish.db.showStatsHUD then
+    -- Check initial setting (don't show if in sleep mode)
+    if Catfish.db.showStatsHUD and not Catfish.db.sleepMode then
         self:Show()
     end
 

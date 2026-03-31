@@ -172,26 +172,41 @@ function OneKey:UpdateBinding(id)
     -- 当前绑定的按键
     local normalizedKey = KEY_NORMALIZE[self.keybind] or self.keybind
 
-    Catfish:Print("UpdateBinding, ", id)
-    Catfish:Print("IsSwimming: ", IsSwimming(), ", IsMounted: ", IsMounted(),  ", InCombat: ", InCombatLockdown())
+    Catfish:Debug("UpdateBinding id:", id, "IsSwimming:", IsSwimming(), "IsMounted:", IsMounted(), "InCombat:", InCombatLockdown())
 
-    -- 检查是否应该解除绑定
+    -- 游泳状态特殊处理
+    if IsSwimming() then
+        local ItemManager = Catfish.Modules.ItemManager
+        local config = Catfish.db.toys
 
-    -- local shouldUnbind, reason = ShouldUnbind()
-    -- Catfish:Print("ShouldUnbind:", shouldUnbind, "reason:", reason)
-    -- if shouldUnbind then
-    --     Catfish:Print("OneKey: Unbound, reason:", reason)
+        -- 配置了木筏
+        if config.raftMode ~= "none" then
+            -- 已有木筏buff → 解除绑定，让按键恢复原有功能
+            -- 用户需要按按键上浮到木筏上
+            if ItemManager:HasRaftBuff() then
+                Catfish:Debug("OneKey: swimming with raft buff - unbinding")
 
-    --     -- 如果是因为"游泳+有木筏BUFF"而解绑，启动轮询检测"站上木筏"
-    --     if reason == "swimming with raft" then
-    --         local StatusPoller = Catfish.Core.StatusPoller
-    --         if StatusPoller and not StatusPoller:IsPolling() then
-    --             StatusPoller:StartPolling("raft-waiting-surface")
-    --         end
-    --     end
+                -- 启动轮询，等待离开游泳状态（站上木筏）
+                local StatusPoller = Catfish.Core.StatusPoller
+                if StatusPoller and not StatusPoller:IsPolling() then
+                    StatusPoller:StartPolling("raft-waiting-surface")
+                end
+                return
+            end
 
-    --     return
-    -- end
+            -- 没有木筏buff → 绑定使用木筏
+            local macro = ItemManager:BuildDraftMacro()
+            if macro then
+                Catfish.API:SetToyButtonMacro(macro)
+                SetOverrideBindingClick(self.autoButton, true, normalizedKey, "CatfishToyButton")
+                Catfish:Debug("OneKey: swimming, bound to raft")
+                return
+            end
+        end
+
+        -- 没配置木筏 → 尝试钓鱼（会失败，但这是用户的选择）
+        -- 继续下面的逻辑
+    end
 
     -- 有浮漂或有钓鱼buff → 收杆
     if HasBobber() or HasFishingBuff() or Catfish.Core:IsFishing() then
@@ -203,14 +218,13 @@ function OneKey:UpdateBinding(id)
     -- 获取 ItemManager
     local ItemManager = Catfish.Modules.ItemManager
 
-    -- 检查是否需要使用钓鱼筏
+    -- 检查是否需要使用钓鱼筏（非游泳状态下）
     if ItemManager:NeedsRaft() then
         local macro = ItemManager:BuildDraftMacro()
-        Catfish:Print("OneKey: raft macro = ", macro)
         if macro then
             Catfish.API:SetToyButtonMacro(macro)
             SetOverrideBindingClick(self.autoButton, true, normalizedKey, "CatfishToyButton")
-            Catfish:Print("OneKey: bound to raft")
+            Catfish:Debug("OneKey: bound to raft (non-swimming)")
             return
         end
     end
@@ -218,11 +232,10 @@ function OneKey:UpdateBinding(id)
     -- 检查是否需要使用巨型鱼漂
     if ItemManager:NeedsGiganticBobber() then
         local macro = ItemManager:BuildGiganticBobberMacro()
-        Catfish:Print("OneKey: gigantic bobber macro = ", macro)
         if macro then
             Catfish.API:SetToyButtonMacro(macro)
             SetOverrideBindingClick(self.autoButton, true, normalizedKey, "CatfishToyButton")
-            Catfish:Print("OneKey: bound to gigantic bobber")
+            Catfish:Debug("OneKey: bound to gigantic bobber")
             return
         end
     end

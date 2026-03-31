@@ -222,7 +222,7 @@ function ItemManager:GetGCDItemToUse()
     -- 木筏优先级最高（游泳时必须先有木筏）
     if NeedsRaft() then
         local name = GetRaftName()
-        Catfish:Print("GetGCDItemToUse: NeedsRaft=true, name=", tostring(name))
+        Catfish:Debug("GetGCDItemToUse: NeedsRaft=true, name=", tostring(name))
         if name then return name end
         -- 如果需要木筏但木筏不可用（冷却中），返回特殊标记
         -- 这样调用方知道要等待而不是钓鱼
