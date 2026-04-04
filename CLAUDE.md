@@ -24,21 +24,36 @@ Catfish is a World of Warcraft addon that provides fishing assistance with featu
 
 ```
 Catfish/
-├── init.lua           # Entry point, namespace setup, DB init, slash commands
+├── init.lua              # Entry point, namespace setup, DB init, slash commands
 ├── Core/
-│   ├── Core.lua       # State machine (IDLE → CASTING → WAITING → REELING)
-│   ├── Events.lua     # Event registration and routing
-│   └── API.lua        # WoW API encapsulation
+│   ├── Core.lua          # State machine (IDLE → CASTING → WAITING → REELING)
+│   ├── Events.lua        # Event registration and routing
+│   ├── API.lua           # WoW API encapsulation
+│   └── StatusPoller.lua  # Swimming state change detection
 ├── Modules/
-│   ├── OneKey.lua     # One-key fishing via SecureActionButton + OverrideBinding
-│   ├── Toys.lua       # Toy scanning and usage
-│   ├── Statistics.lua # Catch recording and stats
-│   └── ...
+│   ├── OneKey.lua        # One-key fishing via SecureActionButton + OverrideBinding
+│   ├── ItemManager.lua   # Unified item usage condition checking
+│   ├── Toys.lua          # Toy scanning and usage
+│   ├── Statistics.lua    # Catch recording and stats
+│   ├── Equipment.lua     # Fishing gear scanning
+│   ├── LureManager.lua   # Lure data and scanning
+│   ├── SoundManager.lua  # Sound settings management
+│   ├── DoubleClick.lua   # Double-click fishing mode
+│   └── TWWItems.lua      # The War Within items management
 ├── UI/
-│   ├── Options.lua    # Settings panel (LibEQOL)
-│   └── ...
-├── Data/              # Static data (fishing poles, toys, etc.)
-└── Locales/           # Localization (enUS, zhCN)
+│   ├── Options.lua       # Settings panel (LibEQOL)
+│   ├── MinimapButton.lua # Minimap button
+│   ├── StatsHUD.lua      # On-screen stats display
+│   ├── StatsWindow.lua   # Statistics window
+│   ├── DebugLog.lua      # Debug log viewer
+│   └── ToySelector.lua   # Toy selection UI
+├── Data/
+│   ├── Constants.lua     # Global constants
+│   ├── FishingPoles.lua  # Fishing pole data
+│   ├── FishingHats.lua   # Fishing hat data
+│   ├── FishingItems.lua  # Other fishing items
+│   └── Toys.lua          # Raft and bobber toy data
+└── Locales/              # Localization (enUS, zhCN)
 ```
 
 **Key architecture patterns:**
