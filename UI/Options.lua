@@ -102,6 +102,10 @@ function Options:BuildSettings(cat)
                 -- Mutually exclusive with double-click
                 db.doubleClickEnabled = false
                 Settings.NotifyUpdate("CF_doubleClickEnabled")
+                -- Disable double-click module
+                if Catfish.Modules.DoubleClick then
+                    Catfish.Modules.DoubleClick:SetEnabled(false)
+                end
             end
             if Catfish.Modules.OneKey then
                 Catfish.Modules.OneKey:SetEnabled(value)

@@ -57,7 +57,7 @@ local function GetGiganticBobberName()
     if GIGANTIC_BOBBER_NAME then
         return GIGANTIC_BOBBER_NAME
     end
-    local name = Catfish.API:GetItemName(Constants.GIGANTIC_BOBBER.TOY_ID)
+    local name = Catfish.API:GetItemName(Catfish.Data.Constants.GIGANTIC_BOBBER.TOY_ID)
     if name then
         GIGANTIC_BOBBER_NAME = name  -- 只缓存有效名称
     end
@@ -70,19 +70,19 @@ local function NeedsGiganticBobber()
     end
 
     -- Check if player already has the buff
-    local hasBuff = Catfish.API:UnitHasBuff("player", Constants.GIGANTIC_BOBBER.BUFF_ID)
+    local hasBuff = Catfish.API:UnitHasBuff("player", Catfish.Data.Constants.GIGANTIC_BOBBER.BUFF_ID)
     if hasBuff then
         return false
     end
 
     -- Check if player has the toy
-    local hasToy = Catfish.API:PlayerHasToy(Constants.GIGANTIC_BOBBER.TOY_ID)
+    local hasToy = Catfish.API:PlayerHasToy(Catfish.Data.Constants.GIGANTIC_BOBBER.TOY_ID)
     if not hasToy then
         return false
     end
 
     -- Check if toy is on cooldown
-    local cooldown = Catfish.API:GetToyCooldown(Constants.GIGANTIC_BOBBER.TOY_ID)
+    local cooldown = Catfish.API:GetToyCooldown(Catfish.Data.Constants.GIGANTIC_BOBBER.TOY_ID)
     if cooldown > 0 then
         return false
     end
