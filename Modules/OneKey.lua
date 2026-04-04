@@ -321,10 +321,6 @@ function OneKey:GetKeybind()
     return self.keybind
 end
 
-function OneKey:ClearKeybind()
-    self:SetKeybind(nil)
-end
-
 -- ============================================
 -- Enable/Disable
 -- ============================================

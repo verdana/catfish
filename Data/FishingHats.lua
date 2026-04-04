@@ -94,13 +94,3 @@ Catfish.Data.FishingHats = {
         source = "Profession"
     },
 }
-
--- Hat enchants that give fishing bonus
-Catfish.Data.HatEnchants = {
-    [136358] = {
-        name = "Tackle Box",
-        bonus = 5,
-        duration = 600,
-        source = "Legion Enchant"
-    },
-}

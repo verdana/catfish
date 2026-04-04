@@ -193,62 +193,8 @@ Catfish.Data.Toys.Bobbers = {
 }
 
 -- ============================================
--- Utility Toys (helpful for fishing)
--- ============================================
-
-Catfish.Data.Toys.Utility = {
-    -- Water walking
-    {
-        name = "Anglers Water Strider",
-        toyID = 85500,
-        spellID = 124036,
-        icon = 774121,
-        description = "Water walking mount",
-        source = "The Anglers"
-    },
-
-    -- Swimming speed
-    {
-        name = "Pair of Bee's Knees",
-        toyID = 163983,
-        spellID = 289598,
-        icon = 134852,
-        description = "Transform into a bee, faster swimming",
-        source = "BfA Quest"
-    },
-
-    -- Auto-loot helpers
-    {
-        name = "Auto-Hammer",
-        toyID = 131824,
-        spellID = 227870,
-        icon = 574744,
-        description = "Auto-interacts with nearby objects",
-        source = "Legion Engineering"
-    },
-}
-
--- ============================================
 -- Helper Functions
 -- ============================================
-
-function Catfish.Data.Toys:GetRaftByName(name)
-    for _, toy in ipairs(self.Rafts) do
-        if toy.name == name then
-            return toy
-        end
-    end
-    return nil
-end
-
-function Catfish.Data.Toys:GetBobberByName(name)
-    for _, toy in ipairs(self.Bobbers) do
-        if toy.name == name then
-            return toy
-        end
-    end
-    return nil
-end
 
 function Catfish.Data.Toys:GetToyByID(toyID)
     -- Check rafts
@@ -260,13 +206,6 @@ function Catfish.Data.Toys:GetToyByID(toyID)
 
     -- Check bobbers
     for _, toy in ipairs(self.Bobbers) do
-        if toy.toyID == toyID then
-            return toy
-        end
-    end
-
-    -- Check utility
-    for _, toy in ipairs(self.Utility) do
         if toy.toyID == toyID then
             return toy
         end

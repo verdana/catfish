@@ -213,11 +213,6 @@ function DoubleClick:SetEnabled(enabled)
     Catfish:Debug("Double-click mode:", enabled and "enabled" or "disabled")
 end
 
-function DoubleClick:SetTimeout(timeout)
-    self.timeout = math.max(0.1, math.min(1.0, timeout))
-    Catfish.db.doubleClickTimeout = self.timeout
-end
-
 -- ============================================
 -- Initialization
 -- ============================================
@@ -247,10 +242,6 @@ end
 
 function DoubleClick:IsEnabled()
     return self.enabled
-end
-
-function DoubleClick:GetTimeout()
-    return self.timeout
 end
 
 -- ============================================

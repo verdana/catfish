@@ -55,23 +55,3 @@ Catfish.Data.FishingPoles = {
     [222769] = {name = "Ashen Angler's Fishing Pole", bonus = 25, level = 1},
     [224367] = {name = "The Fin-esse Fishing Pole", bonus = 20, level = 1},
 }
-
--- Pole categories for sorting
-Catfish.Data.PoleCategories = {
-    artifact = {
-        name = "Artifact Poles",
-        itemIDs = {133755}, -- Underlight Angler
-    },
-    crafted = {
-        name = "Crafted Poles",
-        itemIDs = {19970, 116826}, -- Arcanite, Ephemeral
-    },
-    quest = {
-        name = "Quest Rewards",
-        itemIDs = {19022, 27332, 45992}, -- Nat Pagle's, Brutillus, Mastercraft Kalu'ak
-    },
-    vendor = {
-        name = "Vendor Poles",
-        itemIDs = {6256, 6365, 6366, 6367}, -- Basic poles
-    },
-}

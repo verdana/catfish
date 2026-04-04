@@ -256,38 +256,6 @@ function Toys:UseConfiguredToys()
 end
 
 -- ============================================
--- Configuration
--- ============================================
-
-function Toys:SetRaftMode(mode)
-    if mode == "random" or mode == "specific" or mode == "none" then
-        Catfish.db.toys.raftMode = mode
-        Catfish:Debug("Raft mode set to:", mode)
-        return true
-    end
-    return false
-end
-
-function Toys:SetSelectedRaft(toyID)
-    Catfish.db.toys.selectedRaft = toyID
-    Catfish:Debug("Selected raft set to:", toyID)
-end
-
-function Toys:SetBobberMode(mode)
-    if mode == "random" or mode == "specific" or mode == "none" then
-        Catfish.db.toys.bobberMode = mode
-        Catfish:Debug("Bobber mode set to:", mode)
-        return true
-    end
-    return false
-end
-
-function Toys:SetSelectedBobber(toyID)
-    Catfish.db.toys.selectedBobber = toyID
-    Catfish:Debug("Selected bobber set to:", toyID)
-end
-
--- ============================================
 -- Status Printing
 -- ============================================
 

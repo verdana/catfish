@@ -688,13 +688,3 @@ function Events:Init()
 
 	Catfish:Debug("Events module initialized, registered", #REGISTERED_EVENTS, "events")
 end
-
--- ============================================
--- Manual Event Trigger (for testing)
--- ============================================
-
-function Events:TriggerEvent(event, ...)
-	if self[event] then
-		self[event](...)
-	end
-end

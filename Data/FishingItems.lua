@@ -177,17 +177,3 @@ Catfish.Data.FishingItems = {
         source = "Drop (Gahz'ranka)"
     },
 }
-
--- Category lists for easy access
-Catfish.Data.FishingTrinkets = {}
-Catfish.Data.FishingLures = {}
-
--- Populate categories on load
-for itemID, data in pairs(Catfish.Data.FishingItems) do
-    if data.slot == "trinket" then
-        Catfish.Data.FishingTrinkets[itemID] = data
-    end
-    if data.type == "lure" or data.toy then
-        Catfish.Data.FishingLures[itemID] = data
-    end
-end
