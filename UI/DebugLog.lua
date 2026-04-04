@@ -12,10 +12,8 @@ DebugLog.maxLogs = 100
 DebugLog.frame = nil
 
 -- ============================================
--- Log Capture
+-- Log Capture (using secure hook to avoid affecting other addons)
 -- ============================================
-
-local originalPrint = print
 
 local function CapturePrint(...)
     -- Capture original output
@@ -44,9 +42,6 @@ local function CapturePrint(...)
     if message:find("Catfish") or message:find("catfish") or message:find("鲶鱼") then
         DebugLog:AddLog(message)
     end
-
-    -- Call original print
-    originalPrint(...)
 end
 
 function DebugLog:AddLog(message)
@@ -188,8 +183,9 @@ end
 -- ============================================
 
 function DebugLog:Init()
-    -- Hook print function
-    print = CapturePrint
+    -- Use hooksecurefunc to safely hook print without affecting other addons
+    -- This allows multiple addons to hook the same function
+    hooksecurefunc("print", CapturePrint)
 
     -- Add initial log
     self:AddLog("Catfish Debug Log initialized")

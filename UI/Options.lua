@@ -356,7 +356,7 @@ function Options:BuildSettings(cat)
         key = "treasureChestSound",
         name = "宝箱出现提示音",
         desc = "钓鱼时出现藏宝箱时播放提示音（至暗之夜版本功能）",
-        default = db.treasureChestSound or true,
+        default = db.treasureChestSound ~= false,
         get = function() return db.treasureChestSound ~= false end,
         set = function(value) db.treasureChestSound = value end,
     })

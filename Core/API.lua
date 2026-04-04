@@ -526,7 +526,7 @@ end
 -- ============================================
 
 function API:DumpTable(t, indent)
-    if not Catfish.debugMode then return end
+    if not Catfish.db.debugMode then return end
 
     indent = indent or ""
     for k, v in pairs(t) do

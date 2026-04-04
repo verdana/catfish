@@ -164,7 +164,7 @@ function OneKey:UpdateBinding(id)
 
     -- 如果在坐骑上，清除绑定，不再继续绑定新功能
     if IsMounted() then
-        Catfish:Print("OneKey: mounted, skip binding")
+        Catfish:Debug("OneKey: mounted, skip binding")
         return
     end
 

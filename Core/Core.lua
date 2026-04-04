@@ -49,7 +49,7 @@ function Core:SetState(newState, ...)
         return
     end
 
-    Catfish:Print("State change:", oldState, "->", newState)
+    Catfish:Debug("State change:", oldState, "->", newState)
 
     -- Exit old state
     self:OnExitState(oldState)
@@ -266,11 +266,11 @@ function Core:OnSpellCastChannelStop(unit, castGUID, spellID)
         -- 启动短计时器检测
         self.reelStartTime = GetTime()
         C_Timer.After(0.5, function()
-          if self.currentState == State.REELING then
-              -- 超时无 LOOT_READY，说明是被取消了
-              self:SetState(State.IDLE)
-          end
-      end)
+            if self.currentState == State.REELING then
+                -- 超时无 LOOT_READY，说明是被取消了
+                self:SetState(State.IDLE)
+            end
+        end)
     end
 end
 
