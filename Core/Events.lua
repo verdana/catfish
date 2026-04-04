@@ -330,6 +330,11 @@ function Events.UNIT_AURA(unit, info)
 		return
 	end
 
+	-- 休眠模式下不处理
+	if Catfish.db.sleepMode then
+		return
+	end
+
 	if Catfish.Modules.LureManager then
 		Catfish.Modules.LureManager:OnAuraChanged()
 	end
@@ -522,7 +527,11 @@ function isRaftBuffGained(info)
 	end
 	for _, aura in ipairs(info.addedAuras) do
 		for _, spellID in ipairs(Catfish.Data.Constants.RAFT_SPELL_IDS) do
-			if aura.spellId == spellID then
+			-- 使用 pcall 安全比较，避免副本中被污染的值报错
+			local ok, match = pcall(function()
+				return aura.spellId == spellID
+			end)
+			if ok and match then
 				Catfish:Debug("Gain raft buff: " .. aura.spellId)
 				playerAuras[aura.auraInstanceID] = aura.spellId
 				return true
@@ -533,21 +542,25 @@ function isRaftBuffGained(info)
 end
 
 function isRaftBuffLost(info)
-    if not info or not info.removedAuraInstanceIDs then
-        return
-    end
-    for _, instanceId in pairs(info.removedAuraInstanceIDs) do
-        if playerAuras[instanceId] then
-            for _, spellID in ipairs(Catfish.Data.Constants.RAFT_SPELL_IDS) do
-                if playerAuras[instanceId] then
-                    Catfish:Debug("Lost raft buff: " .. playerAuras[instanceId])
-                    playerAuras[instanceId] = nil
-                    return true
-                end
-            end
-        end
-    end
-    return false
+	if not info or not info.removedAuraInstanceIDs then
+		return
+	end
+	for _, instanceId in pairs(info.removedAuraInstanceIDs) do
+		if playerAuras[instanceId] then
+			for _, spellID in ipairs(Catfish.Data.Constants.RAFT_SPELL_IDS) do
+				-- 使用 pcall 安全比较，避免副本中被污染的值报错
+				local ok, match = pcall(function()
+					return playerAuras[instanceId] == spellID
+				end)
+				if ok and match then
+					Catfish:Debug("Lost raft buff: " .. playerAuras[instanceId])
+					playerAuras[instanceId] = nil
+					return true
+				end
+			end
+		end
+	end
+	return false
 end
 
 function isRaftBuffRefreshed(info)
@@ -569,18 +582,22 @@ end
 -- ============================================
 
 function isGiganticBobberBuffGained(info)
-    if not info or not info.addedAuras then
-        return false
-    end
-    local buffID = Catfish.Data.Constants.GIGANTIC_BOBBER.BUFF_ID
-    for _, aura in ipairs(info.addedAuras) do
-        if aura.spellId == buffID then
-            Catfish:Debug("Gain gigantic bobber buff: " .. aura.spellId)
-            giganticBobberAuras[aura.auraInstanceID] = aura.spellId
-            return true
-        end
-    end
-    return false
+	if not info or not info.addedAuras then
+		return false
+	end
+	local buffID = Catfish.Data.Constants.GIGANTIC_BOBBER.BUFF_ID
+	for _, aura in ipairs(info.addedAuras) do
+		-- 使用 pcall 安全比较，避免副本中被污染的值报错
+		local ok, match = pcall(function()
+			return aura.spellId == buffID
+		end)
+		if ok and match then
+			Catfish:Debug("Gain gigantic bobber buff: " .. aura.spellId)
+			giganticBobberAuras[aura.auraInstanceID] = aura.spellId
+			return true
+		end
+	end
+	return false
 end
 
 function isGiganticBobberBuffLost(info)
