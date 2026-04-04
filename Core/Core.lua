@@ -115,7 +115,7 @@ end
 -- ============================================
 
 function Core:EnterIdle()
-    Catfish:Debug("Entered IDLE state")
+    -- Catfish:Debug("Entered IDLE state")
 
     -- Clear bobber data
     self.bobberGUID = nil
@@ -128,7 +128,7 @@ function Core:EnterIdle()
 end
 
 function Core:ExitIdle()
-    Catfish:Debug("Exiting IDLE state")
+    -- Catfish:Debug("Exiting IDLE state")
 end
 
 -- ============================================
@@ -136,7 +136,7 @@ end
 -- ============================================
 
 function Core:EnterCasting()
-    Catfish:Debug("Entered CASTING state")
+    -- Catfish:Debug("Entered CASTING state")
 
     -- Ensure auto loot is enabled if the option is set
     if Catfish.db.keepAutoLoot then
@@ -151,7 +151,7 @@ function Core:EnterCasting()
 end
 
 function Core:ExitCasting()
-    Catfish:Debug("Exiting CASTING state")
+    -- Catfish:Debug("Exiting CASTING state")
 end
 
 -- ============================================
@@ -159,7 +159,7 @@ end
 -- ============================================
 
 function Core:EnterWaiting(bobberGUID)
-    Catfish:Debug("Entered WAITING state, bobber:", bobberGUID)
+    -- Catfish:Debug("Entered WAITING state, bobber:", bobberGUID)
 
     self.bobberGUID = bobberGUID
 
@@ -170,7 +170,7 @@ function Core:EnterWaiting(bobberGUID)
 end
 
 function Core:ExitWaiting()
-    Catfish:Debug("Exiting WAITING state")
+    -- Catfish:Debug("Exiting WAITING state")
 end
 
 -- ============================================
@@ -178,7 +178,7 @@ end
 -- ============================================
 
 function Core:CancelFishing()
-    Catfish:Debug("CancelFishing called, state:", self.currentState)
+    -- Catfish:Debug("CancelFishing called, state:", self.currentState)
 
     if self.currentState == State.CASTING or self.currentState == State.WAITING then
         self:SetState(State.IDLE)
