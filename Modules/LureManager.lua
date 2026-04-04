@@ -94,6 +94,9 @@ function LureManager:OnBagUpdate(bagID)
     self:ScanBags()
 end
 
+function LureManager:OnAuraChanged()
+end
+
 -- ============================================
 -- Initialization
 -- ============================================

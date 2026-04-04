@@ -175,6 +175,10 @@ function Options:BuildSettings(cat)
                 -- Mutually exclusive with one-key
                 db.oneKeyEnabled = false
                 Settings.NotifyUpdate("CF_oneKeyEnabled")
+                -- Disable one-key module
+                if Catfish.Modules.OneKey then
+                    Catfish.Modules.OneKey:SetEnabled(false)
+                end
             end
             if Catfish.Modules.DoubleClick then
                 Catfish.Modules.DoubleClick:SetEnabled(value)
