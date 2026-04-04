@@ -32,10 +32,6 @@ end
 -- Toy Item Checks (不受GCD影响)
 -- ============================================
 
--- 注意：木筏需要读条，属于GCD物品，放在GCD检查中处理
-
-
-
 -- 获取巨型鱼漂名称
 local GIGANTIC_BOBBER_NAME = nil
 
@@ -63,6 +59,19 @@ local function NeedsCustomBobber()
     end
 
     if Catfish.API:GetToyCooldown(toyID) > 0 then
+        return false
+    end
+
+    -- 获取该玩具对应的 spellID (BUFF ID)
+    local spellID = GetConstants():GetBobberSpellID(toyID)
+    if not spellID then
+        -- 未知的玩具ID，默认允许使用
+        return true
+    end
+
+    -- 检查是否已有同类型浮标buff且剩余时间>60秒
+    local hasBuff, remaining = Catfish.API:UnitHasBuff("player", spellID)
+    if hasBuff and remaining > 60 then
         return false
     end
 
@@ -275,6 +284,14 @@ function ItemManager:BuildGiganticBobberMacro()
     end
 end
 
+-- 生成浮标宏
+function ItemManager:BuildCustomBobberMacro()
+    local name = GetCustomBobberName()
+    if name then
+        return "/use " .. name
+    end
+end
+
 -- 生成钓鱼宏（玩具物品 + 钓鱼）
 function ItemManager:GenerateFishingMacro()
     local lines = {}
@@ -340,8 +357,9 @@ function ItemManager:NeedsGiganticBobber()
 
     local GIGANTIC_BOBBER = GetConstants().GIGANTIC_BOBBER
 
-    -- 已有buff
-    if Catfish.API:UnitHasBuff("player", GIGANTIC_BOBBER.BUFF_ID) then
+    -- 已有buff且剩余时间>60秒
+    local hasBuff, remaining = Catfish.API:UnitHasBuff("player", GIGANTIC_BOBBER.BUFF_ID)
+    if hasBuff and remaining > 60 then
         return false
     end
 
@@ -356,4 +374,69 @@ function ItemManager:NeedsGiganticBobber()
     end
 
     return true
+end
+
+-- 检查是否需要自定义浮标
+-- 返回: needsUse, shouldOverride
+--   needsUse: 是否需要使用浮标
+--   shouldOverride: 是否需要覆盖当前浮标（切换了不同类型）
+function ItemManager:NeedsCustomBobber()
+    local toyID = Catfish.db.selectedBobberToy
+    if not toyID then
+        return false, false
+    end
+
+    if not Catfish.API:PlayerHasToy(toyID) then
+        return false, false
+    end
+
+    if Catfish.API:GetToyCooldown(toyID) > 0 then
+        return false, false
+    end
+
+    -- 获取该玩具对应的 spellID (BUFF ID)
+    local spellID = GetConstants():GetBobberSpellID(toyID)
+    if not spellID then
+        -- 未知的玩具ID，默认允许使用
+        return true, false
+    end
+
+    -- 检查是否已有同类型浮标buff
+    local hasBuff, remaining = Catfish.API:UnitHasBuff("player", spellID)
+    if hasBuff and remaining > 60 then
+        -- 已有足够时间的同类型BUFF，不需要重新使用
+        return false, false
+    end
+
+    -- 检查是否有其他类型的浮标buff（需要覆盖）
+    local hasOtherBobberBuff = self:HasOtherBobberBuff(toyID)
+
+    -- 如果有其他浮标buff或者没有buff/时间不足，都需要使用
+    return true, hasOtherBobberBuff
+end
+
+-- 检查是否有其他类型的浮标buff（排除当前选择的浮标）
+function ItemManager:HasOtherBobberBuff(currentToyID)
+    local currentSpellID = GetConstants():GetBobberSpellID(currentToyID)
+
+    for _, spellID in ipairs(GetConstants().BOBBER_SPELL_IDS) do
+        if spellID ~= currentSpellID then
+            local hasBuff = Catfish.API:UnitHasBuff("player", spellID)
+            if hasBuff then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+-- 获取当前活跃的浮标buff spellID（如果有）
+function ItemManager:GetActiveBobberBuffSpellID()
+    for _, spellID in ipairs(GetConstants().BOBBER_SPELL_IDS) do
+        local hasBuff = Catfish.API:UnitHasBuff("player", spellID)
+        if hasBuff then
+            return spellID
+        end
+    end
+    return nil
 end

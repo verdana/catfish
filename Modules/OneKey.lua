@@ -131,7 +131,6 @@ local BLOCKED_KEYS = {
 
 -- 默认绑定
 function OneKey:DefaultBinding()
-
 end
 
 -- 更新绑定（核心逻辑）
@@ -172,7 +171,7 @@ function OneKey:UpdateBinding(id)
     -- 当前绑定的按键
     local normalizedKey = KEY_NORMALIZE[self.keybind] or self.keybind
 
-    Catfish:Debug("UpdateBinding id:", id, "IsSwimming:", IsSwimming(), "IsMounted:", IsMounted(), "InCombat:", InCombatLockdown())
+    -- Catfish:Debug("UpdateBinding id:", id, "IsSwimming:", IsSwimming(), "IsMounted:", IsMounted(), "InCombat:", InCombatLockdown())
 
     -- 游泳状态特殊处理
     if IsSwimming() then
@@ -236,6 +235,17 @@ function OneKey:UpdateBinding(id)
             Catfish.API:SetToyButtonMacro(macro)
             SetOverrideBindingClick(self.autoButton, true, normalizedKey, "CatfishToyButton")
             Catfish:Debug("OneKey: bound to gigantic bobber")
+            return
+        end
+    end
+
+    -- 检查是否需要使用浮标
+    if ItemManager:NeedsCustomBobber() then
+        local macro = ItemManager:BuildCustomBobberMacro()
+        if macro then
+            Catfish.API:SetToyButtonMacro(macro)
+            SetOverrideBindingClick(self.autoButton, true, normalizedKey, "CatfishToyButton")
+            Catfish:Debug("OneKey: bound to custom bobber")
             return
         end
     end

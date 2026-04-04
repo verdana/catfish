@@ -12,6 +12,7 @@ local eventFrame = nil
 -- 钓鱼相关的BUFF
 local playerAuras = {}
 local giganticBobberAuras = {}
+local customBobberAuras = {}
 
 -- ============================================
 -- Event Registration
@@ -196,8 +197,6 @@ function Events:ParseLootMessage(message)
 end
 
 function Events.LOOT_READY(autoloot)
-	Catfish:Debug("Loot ready, autoloot:", autoloot)
-
 	-- Auto-loot is handled by the game's auto-loot setting
 	-- We just need to track what we caught
 
@@ -207,8 +206,6 @@ function Events.LOOT_READY(autoloot)
 end
 
 function Events.LOOT_CLOSED()
-	Catfish:Debug("Loot window closed")
-
 	if Catfish.Core then
 		Catfish.Core:OnLootClosed()
 	end
@@ -436,6 +433,60 @@ local function isGiganticBobberBuffRefreshed(info)
     return false
 end
 
+-- ============================================
+-- Custom Bobber Buff Detection (自定义浮标)
+-- ============================================
+
+local function isCustomBobberBuffGained(info)
+    if not info or not info.addedAuras then
+        return false
+    end
+    local BOBBER_SPELL_IDS = Catfish.Data.Constants.BOBBER_SPELL_IDS
+    for _, aura in ipairs(info.addedAuras) do
+        for _, spellID in ipairs(BOBBER_SPELL_IDS) do
+            -- 跳过巨型鱼漂（它有单独的处理逻辑）
+            if spellID ~= Catfish.Data.Constants.GIGANTIC_BOBBER.BUFF_ID then
+                local ok, match = pcall(function()
+                    return aura.spellId == spellID
+                end)
+                if ok and match then
+                    Catfish:Debug("Gain custom bobber buff: " .. aura.spellId)
+                    customBobberAuras[aura.auraInstanceID] = aura.spellId
+                    return true
+                end
+            end
+        end
+    end
+    return false
+end
+
+local function isCustomBobberBuffLost(info)
+    if not info or not info.removedAuraInstanceIDs then
+        return false
+    end
+    for _, instanceId in pairs(info.removedAuraInstanceIDs) do
+        if customBobberAuras[instanceId] then
+            Catfish:Debug("Lost custom bobber buff: " .. customBobberAuras[instanceId])
+            customBobberAuras[instanceId] = nil
+            return true
+        end
+    end
+    return false
+end
+
+local function isCustomBobberBuffRefreshed(info)
+    if not info or not info.updatedAuraInstanceIDs then
+        return false
+    end
+    for _, instanceId in pairs(info.updatedAuraInstanceIDs) do
+        if customBobberAuras[instanceId] then
+            Catfish:Debug("Custom bobber buff refreshed: " .. customBobberAuras[instanceId])
+            return true
+        end
+    end
+    return false
+end
+
 
 function Events.UNIT_AURA(unit, info)
 	if unit ~= "player" then
@@ -491,6 +542,24 @@ function Events.UNIT_AURA(unit, info)
 	-- 巨型鱼漂 BUFF 刷新
 	if isGiganticBobberBuffRefreshed(info) then
 		Catfish.Modules.OneKey:UpdateBinding("RefreshGiganticBobber")
+		return
+	end
+
+	-- 自定义浮标 BUFF 获取
+	if isCustomBobberBuffGained(info) then
+		Catfish.Modules.OneKey:UpdateBinding("+CustomBobber")
+		return
+	end
+
+	-- 自定义浮标 BUFF 失去
+	if isCustomBobberBuffLost(info) then
+		Catfish.Modules.OneKey:UpdateBinding("-CustomBobber")
+		return
+	end
+
+	-- 自定义浮标 BUFF 刷新
+	if isCustomBobberBuffRefreshed(info) then
+		Catfish.Modules.OneKey:UpdateBinding("RefreshCustomBobber")
 		return
 	end
 end
