@@ -218,6 +218,8 @@ end
 
 function Core:OnSpellCastChannelStart(unit, castGUID, spellID)
     if unit ~= "player" then return end
+    if InCombatLockdown() then return end
+
     if not Catfish.API:IsFishingSpell(spellID) then return end
 
     -- Start session if not active

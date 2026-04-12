@@ -127,21 +127,20 @@ function OneKey:UpdateBinding(id)
         return
     end
 
-    -- 清除现有绑定
-    ClearOverrideBindings(self.autoButton)
-
     -- 如果进入战斗，清除绑定，不再继续绑定新功能
     if InCombatLockdown() then
         Catfish:Debug("OneKey: In combat lockdown, skip binding")
         return
     end
 
-    -- 如果在坐骑上，清除绑定，不再继续绑定新功能
+    -- 清除现有绑定（需检测战斗）
+    ClearOverrideBindings(self.autoButton)
+
+    -- 如果在坐骑上，跳过绑定，不再继续绑定新功能
     if IsMounted() then
         Catfish:Debug("OneKey: mounted, skip binding")
         return
     end
-
 
     -- 当前绑定的按键
     local normalizedKey = KEY_NORMALIZE[self.keybind] or self.keybind
