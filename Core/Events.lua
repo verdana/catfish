@@ -42,13 +42,35 @@ local REGISTERED_EVENTS = {
 	"CURSOR_CHANGED",
 	"GET_ITEM_INFO_RECEIVED", -- For item data delayed loading
 	"PLAYER_MOUNT_DISPLAY_CHANGED", -- For mount state changes
+	"MOUNT_JOURNAL_USABILITY_CHANGED",
 }
 
 -- ============================================
 -- Event Handlers
 -- ============================================
 
+-- 事件黑名单：这些事件不打印，避免刷屏
+local EVENT_PRINT_BLACKLIST = {
+	GLOBAL_MOUSE_DOWN = true,
+	GLOBAL_MOUSE_UP = true,
+	PLAYER_STOPPED_MOVING = true,
+	PLAYER_STOPPED_TURNING = true,
+	PLAYER_STARTED_TURNING = true,
+	PLAYER_STARTED_MOVING = true,
+	ACTIONBAR_SLOT_CHANGED = true,
+	WORLD_CURSOR_TOOLTIP_UPDATE = true,
+	UPDATE_MOUSEOVER_UNIT = true,
+	ACTIONBAR_UPDATE_COOLDOWN = true,
+	ACTION_RANGE_CHECK_UPDATE = true,
+	CURSOR_CHANGED = true,
+	SPELL_ACTIVATION_OVERLAY_HIDE = true,
+}
+
 local function OnEvent(self, event, ...)
+	-- 调试：打印所有事件（已关闭，需要时取消注释并改用 RegisterAllEvents）
+	-- if not EVENT_PRINT_BLACKLIST[event] then
+	-- 	Catfish:Print("[Event]", event)
+	-- end
 	if Events[event] then
 		Events[event](...)
 	end
@@ -243,6 +265,14 @@ end
 
 function Events.PLAYER_MOUNT_DISPLAY_CHANGED()
 	-- 坐骑状态变化时更新绑定
+	if Catfish.Modules.OneKey and Catfish.Modules.OneKey.UpdateBinding then
+		Catfish.Modules.OneKey:UpdateBinding(Catfish.Modules.OneKey.BIND_REASON.MOUNT_CHANGED)
+	end
+end
+
+function Events.MOUNT_JOURNAL_USABILITY_CHANGED(...)
+	-- 坐骑可用性变化时更新绑定
+	-- 可用来检测玩家在水下以及跃出水面
 	if Catfish.Modules.OneKey and Catfish.Modules.OneKey.UpdateBinding then
 		Catfish.Modules.OneKey:UpdateBinding(Catfish.Modules.OneKey.BIND_REASON.MOUNT_CHANGED)
 	end
@@ -617,6 +647,7 @@ function Events:Init()
 	eventFrame = CreateFrame("Frame")
 
 	-- Register all events
+	-- 调试模式：使用 RegisterAllEvents() 监听所有事件（性能开销大，调试完改回）
 	for _, event in ipairs(REGISTERED_EVENTS) do
 		eventFrame:RegisterEvent(event)
 	end

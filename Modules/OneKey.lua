@@ -159,11 +159,6 @@ function OneKey:UpdateBinding(id)
             -- 用户需要按按键上浮到木筏上
             if ItemManager:HasRaftBuff() then
                 Catfish:Debug("OneKey: swimming with raft buff - unbinding")
-
-                -- 启动持续轮询，等待离开游泳状态（站上木筏）后重新绑定钓鱼
-                if StatusPoller and not StatusPoller:IsPolling() then
-                    StatusPoller:StartPolling("swimming-raft-monitor")
-                end
                 return
             end
 
@@ -182,11 +177,6 @@ function OneKey:UpdateBinding(id)
             else
                 -- 水面 + 无木筏buff → 解除绑定，恢复原键功能（跳跃）
                 Catfish:Debug("OneKey: swimming on surface, no raft buff - unbinding for jump")
-            end
-
-            -- 启动持续轮询监控潜水状态变化
-            if StatusPoller and not StatusPoller:IsPolling() then
-                StatusPoller:StartPolling("swimming-raft-monitor")
             end
             return
         end

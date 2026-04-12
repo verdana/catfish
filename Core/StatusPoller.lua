@@ -43,7 +43,7 @@ function StatusPoller:StartPolling(reason)
     
     -- 如果已经在轮询，检查是否需要更新原因
     if isPolling then
-        Catfish:Debug("StatusPoller: already polling, existing reason:", pollReason, "new reason:", reason)
+        Catfish:Print("StatusPoller: already polling, existing reason:", pollReason, "new reason:", reason)
         -- 可以选择更新原因或忽略
         return
     end
@@ -57,7 +57,7 @@ function StatusPoller:StartPolling(reason)
     pollReason = reason
     lastPollTime = 0
     
-    Catfish:Debug("StatusPoller: START - reason:", pollReason, "swimming:", tostring(lastSwimmingState))
+    Catfish:Print("StatusPoller: START - reason:", pollReason, "swimming:", tostring(lastSwimmingState))
     
     -- 创建或显示轮询帧
     if not pollFrame then
@@ -79,7 +79,7 @@ function StatusPoller:StopPolling()
         pollFrame:Hide()
     end
     
-    Catfish:Debug("StatusPoller: STOP")
+    Catfish:Print("StatusPoller: STOP")
 end
 
 -- 检查是否正在轮询
@@ -105,7 +105,7 @@ function StatusPoller:OnUpdate(elapsed)
     
     -- 检查超时（无超时模式跳过）
     if not NO_TIMEOUT_REASONS[pollReason] and now - pollStartTime > MAX_POLL_DURATION then
-        Catfish:Debug("StatusPoller: timeout after", MAX_POLL_DURATION, "seconds, stopping")
+        Catfish:Print("StatusPoller: timeout after", MAX_POLL_DURATION, "seconds, stopping")
         self:StopPolling()
         return
     end
@@ -113,7 +113,7 @@ function StatusPoller:OnUpdate(elapsed)
     -- 检测游泳状态变化
     local currentSwimming = IsSwimming()
     if currentSwimming ~= lastSwimmingState then
-        Catfish:Debug("StatusPoller: SWIMMING STATE CHANGED:", 
+        Catfish:Print("StatusPoller: SWIMMING STATE CHANGED:", 
             tostring(lastSwimmingState), "->", tostring(currentSwimming), 
             "reason:", pollReason)
         
@@ -128,7 +128,7 @@ function StatusPoller:OnUpdate(elapsed)
         local ok, currentSubmerged = pcall(IsSubmerged)
         if not ok then currentSubmerged = false end
         if currentSubmerged ~= lastSubmergedState then
-            Catfish:Debug("StatusPoller: SUBMERGED STATE CHANGED:",
+            Catfish:Print("StatusPoller: SUBMERGED STATE CHANGED:",
                 tostring(lastSubmergedState), "->", tostring(currentSubmerged),
                 "reason:", pollReason)
             
@@ -145,7 +145,7 @@ function StatusPoller:OnUpdate(elapsed)
     
     -- 如果不在游泳且有木筏BUFF，说明已经站上木筏，可以停止轮询
     if not currentSwimming and hasRaftBuff then
-        Catfish:Debug("StatusPoller: detected on raft (not swimming, has buff), stopping")
+        Catfish:Print("StatusPoller: detected on raft (not swimming, has buff), stopping")
         self:StopPolling()
         return
     end
@@ -154,7 +154,7 @@ function StatusPoller:OnUpdate(elapsed)
     if not currentSwimming and not hasRaftBuff then
         -- 检查是否是从木筏上掉下来了
         if pollReason:find("raft") then
-            Catfish:Debug("StatusPoller: raft may have disappeared, stopping")
+            Catfish:Print("StatusPoller: raft may have disappeared, stopping")
             self:StopPolling()
             return
         end
@@ -198,5 +198,5 @@ function StatusPoller:Init()
     lastSwimmingState = IsSwimming()
     local ok, submerged = pcall(IsSubmerged)
     lastSubmergedState = ok and submerged or false
-    Catfish:Debug("StatusPoller: initialized, swimming:", tostring(lastSwimmingState), "submerged:", tostring(lastSubmergedState))
+    Catfish:Print("StatusPoller: initialized, swimming:", tostring(lastSwimmingState), "submerged:", tostring(lastSubmergedState))
 end
