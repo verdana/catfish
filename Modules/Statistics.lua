@@ -30,7 +30,7 @@ function Statistics:RecordCatch(itemID)
     if not itemID then return end
 
     local itemName = Catfish.API:GetItemName(itemID)
-    local itemLink = Catfish.API:GetItemLink(itemID)
+    local itemLink = select(2, GetItemInfo(itemID))
     local quality = select(3, GetItemInfo(itemID))
     local zoneID = Catfish.API:GetZoneID()
     local zoneName = Catfish.API:GetZoneName()
@@ -91,8 +91,6 @@ function Statistics:OnLootReady()
         return
     end
 
-    Catfish:Debug("Statistics: Tracking fishing loot")
-
     -- Track what we're about to loot
     self.currentLootItems = {}
 
@@ -146,13 +144,11 @@ function Statistics:OnFishingStarted()
     end
 
     self.isFishingLoot = true
-    Catfish:Debug("Statistics: Fishing started, loot flag set")
 
     -- Set a timeout to clear the flag after 30 seconds (safety)
     -- This handles cases where fishing is cancelled without proper cleanup
     self.fishingLootTimeout = C_Timer.NewTimer(30, function()
         if self.isFishingLoot then
-            Catfish:Debug("Statistics: Fishing loot flag timeout - clearing")
             self.isFishingLoot = false
             self.fishingLootTimeout = nil
         end
@@ -168,7 +164,6 @@ function Statistics:OnFishingEnded()
     end
 
     self.isFishingLoot = false
-    Catfish:Debug("Statistics: Fishing ended, loot flag cleared")
 end
 
 -- Called when player reels in (enters REELING state) - backup
@@ -179,7 +174,6 @@ function Statistics:OnFishingReelStart()
     end
 
     self.isFishingLoot = true
-    Catfish:Debug("Statistics: Reeling started, loot flag set")
 end
 
 function Statistics:AnnounceRareCatch(itemID, quantity)

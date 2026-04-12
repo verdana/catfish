@@ -29,7 +29,6 @@ local REGISTERED_EVENTS = {
 	"UI_ERROR_MESSAGE",
 	"CHAT_MSG_LOOT",
 	"CHAT_MSG_SYSTEM",
-	"CHAT_MSG_EMOTE", -- 玩家表情
 	"CHAT_MSG_MONSTER_EMOTE", -- 怪物表情（宝箱、根须蟹等消息）
 	"PLAYER_REGEN_DISABLED",
 	"PLAYER_REGEN_ENABLED",
@@ -101,14 +100,8 @@ function Events.UNIT_SPELLCAST_SUCCEEDED(unit, castGUID, spellID)
 
 	local GIGANTIC_BOBBER = GetGiganticBobberConst()
 	-- Check for Gigantic Bobber buff application
-	-- The toy applies a buff with spellID 397827
 	if spellID == GIGANTIC_BOBBER.BUFF_ID then
 		Catfish:Debug("Events: Gigantic Bobber buff applied (spellID:", spellID, ")")
-
-		-- Notify OneKey module to update binding
-		if Catfish.Modules and Catfish.Modules.OneKey then
-			Catfish.Modules.OneKey:OnToyUsed(GIGANTIC_BOBBER.TOY_ID)
-		end
 	end
 end
 
@@ -239,43 +232,10 @@ function Events.PLAYER_REGEN_ENABLED()
 	-- Restore keybinding after combat (delayed to avoid taint)
 	C_Timer.After(0.1, function()
 		if Catfish.Modules.OneKey and Catfish.Modules.OneKey.UpdateBinding then
-			Catfish.Modules.OneKey:UpdateBinding(11)
+			Catfish.Modules.OneKey:UpdateBinding(Catfish.Modules.OneKey.BIND_REASON.COMBAT_END)
 		end
 	end)
 end
-
--- ============================================
--- Movement Events
--- ============================================
-
--- 注意：游泳状态检测已移至 StatusPoller，不再在移动事件中检测
-
--- function Events.PLAYER_STARTED_MOVING()
---     if Catfish.Core then
---         local state = Catfish.Core:GetState()
-
---         -- Fishing is cancelled when moving during casting
---         if state == Catfish.Core.State.CASTING then
---             C_Timer.After(0.1, function()
---                 if Catfish.API:IsPlayerMoving() then
---                     Catfish.Core:SetState(Catfish.Core.State.IDLE)
---                 end
---             end)
---         end
---     end
-
---     -- 移动开始时也可以触发一次绑定更新（用于其他场景）
---     if Catfish.Modules.OneKey and Catfish.Modules.OneKey.UpdateBinding then
---         Catfish.Modules.OneKey:UpdateBinding("player-started-moving")
---     end
--- end
-
--- function Events.PLAYER_STOPPED_MOVING()
---     -- 移动停止时触发一次绑定更新
---     if Catfish.Modules.OneKey and Catfish.Modules.OneKey.UpdateBinding then
---         Catfish.Modules.OneKey:UpdateBinding("player-stopped-moving")
---     end
--- end
 
 -- ============================================
 -- Mount Events
@@ -284,7 +244,7 @@ end
 function Events.PLAYER_MOUNT_DISPLAY_CHANGED()
 	-- 坐骑状态变化时更新绑定
 	if Catfish.Modules.OneKey and Catfish.Modules.OneKey.UpdateBinding then
-		Catfish.Modules.OneKey:UpdateBinding(14)
+		Catfish.Modules.OneKey:UpdateBinding(Catfish.Modules.OneKey.BIND_REASON.MOUNT_CHANGED)
 	end
 end
 
@@ -511,55 +471,55 @@ function Events.UNIT_AURA(unit, info)
 
 	-- 如果获取钓鱼筏BUFF，重新刷新一下绑定
     if isRaftBuffGained(info) then
-        Catfish.Modules.OneKey:UpdateBinding("+Raft")
+        Catfish.Modules.OneKey:UpdateBinding(Catfish.Modules.OneKey.BIND_REASON.RAFT_GAINED)
         return
     end
 
 	-- 同样的如果失去了钓鱼筏BUFF，一样刷新下绑定
     if isRaftBuffLost(info) then
-        Catfish.Modules.OneKey:UpdateBinding("-Raft")
+        Catfish.Modules.OneKey:UpdateBinding(Catfish.Modules.OneKey.BIND_REASON.RAFT_LOST)
         return
     end
 
 	-- 如果钓鱼筏BUFF时间被刷新（再次使用玩具），也更新绑定
 	if isRaftBuffRefreshed(info) then
-		Catfish.Modules.OneKey:UpdateBinding("RefreshRaft")
+		Catfish.Modules.OneKey:UpdateBinding(Catfish.Modules.OneKey.BIND_REASON.RAFT_REFRESHED)
 		return
 	end
 
 	-- 巨型鱼漂 BUFF 获取
 	if isGiganticBobberBuffGained(info) then
-		Catfish.Modules.OneKey:UpdateBinding("+GiganticBobber")
+		Catfish.Modules.OneKey:UpdateBinding(Catfish.Modules.OneKey.BIND_REASON.GIGANTIC_BOBBER_GAINED)
 		return
 	end
 
 	-- 巨型鱼漂 BUFF 失去
 	if isGiganticBobberBuffLost(info) then
-		Catfish.Modules.OneKey:UpdateBinding("-GiganticBobber")
+		Catfish.Modules.OneKey:UpdateBinding(Catfish.Modules.OneKey.BIND_REASON.GIGANTIC_BOBBER_LOST)
 		return
 	end
 
 	-- 巨型鱼漂 BUFF 刷新
 	if isGiganticBobberBuffRefreshed(info) then
-		Catfish.Modules.OneKey:UpdateBinding("RefreshGiganticBobber")
+		Catfish.Modules.OneKey:UpdateBinding(Catfish.Modules.OneKey.BIND_REASON.GIGANTIC_BOBBER_REFRESHED)
 		return
 	end
 
 	-- 自定义浮标 BUFF 获取
 	if isCustomBobberBuffGained(info) then
-		Catfish.Modules.OneKey:UpdateBinding("+CustomBobber")
+		Catfish.Modules.OneKey:UpdateBinding(Catfish.Modules.OneKey.BIND_REASON.CUSTOM_BOBBER_GAINED)
 		return
 	end
 
 	-- 自定义浮标 BUFF 失去
 	if isCustomBobberBuffLost(info) then
-		Catfish.Modules.OneKey:UpdateBinding("-CustomBobber")
+		Catfish.Modules.OneKey:UpdateBinding(Catfish.Modules.OneKey.BIND_REASON.CUSTOM_BOBBER_LOST)
 		return
 	end
 
 	-- 自定义浮标 BUFF 刷新
 	if isCustomBobberBuffRefreshed(info) then
-		Catfish.Modules.OneKey:UpdateBinding("RefreshCustomBobber")
+		Catfish.Modules.OneKey:UpdateBinding(Catfish.Modules.OneKey.BIND_REASON.CUSTOM_BOBBER_REFRESHED)
 		return
 	end
 end
@@ -591,28 +551,6 @@ function Events.CHAT_MSG_SYSTEM(message)
 		end
 	end)
 	-- Silently ignore errors from tainted strings
-end
-
--- ============================================
--- Emote Events (宝箱出现消息)
--- ============================================
-
-function Events.CHAT_MSG_EMOTE(
-	message,
-	playerName,
-	languageName,
-	channelName,
-	playerName2,
-	specialFlags,
-	zoneChannelID,
-	channelIndex,
-	channelBaseName,
-	unused,
-	lineID,
-	senderGUID,
-	senderName
-)
-	-- 玩家表情，暂不处理
 end
 
 -- ============================================
@@ -665,7 +603,7 @@ function Events.GET_ITEM_INFO_RECEIVED(itemID, success)
 		end
 		-- Update OneKey binding
 		if Catfish.Modules and Catfish.Modules.OneKey then
-			Catfish.Modules.OneKey:UpdateBinding(15)
+			Catfish.Modules.OneKey:UpdateBinding(Catfish.Modules.OneKey.BIND_REASON.ITEM_LOADED)
 		end
 	end
 end

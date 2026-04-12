@@ -18,20 +18,6 @@ end
 -- Helper Functions
 -- ============================================
 
-local function GetFishingSpellName()
-    if C_Spell and C_Spell.GetSpellInfo then
-        local info = C_Spell.GetSpellInfo(7620)
-        return info and info.name
-    elseif GetSpellInfo then
-        return GetSpellInfo(7620)
-    end
-    return nil
-end
-
--- ============================================
--- Toy Item Checks (不受GCD影响)
--- ============================================
-
 -- 获取巨型鱼漂名称
 local GIGANTIC_BOBBER_NAME = nil
 
@@ -45,37 +31,6 @@ local function GetGiganticBobberName()
         GIGANTIC_BOBBER_NAME = name
     end
     return name
-end
-
--- 检查是否需要自定义浮标
-local function NeedsCustomBobber()
-    local toyID = Catfish.db.selectedBobberToy
-    if not toyID then
-        return false
-    end
-
-    if not Catfish.API:PlayerHasToy(toyID) then
-        return false
-    end
-
-    if Catfish.API:GetToyCooldown(toyID) > 0 then
-        return false
-    end
-
-    -- 获取该玩具对应的 spellID (BUFF ID)
-    local spellID = GetConstants():GetBobberSpellID(toyID)
-    if not spellID then
-        -- 未知的玩具ID，默认允许使用
-        return true
-    end
-
-    -- 检查是否已有同类型浮标buff且剩余时间>60秒
-    local hasBuff, remaining = Catfish.API:UnitHasBuff("player", spellID)
-    if hasBuff and remaining > 60 then
-        return false
-    end
-
-    return true
 end
 
 -- 获取自定义浮标名称
@@ -112,86 +67,8 @@ local function GetRaftName()
 end
 
 -- ============================================
--- GCD Item Checks (受GCD影响的消耗品)
--- ============================================
-
--- 检查是否需要阿曼尼结界
-local function NeedsAmaniWard()
-    if not Catfish.db.tww or not Catfish.db.tww.useAmaniWard then
-        return false
-    end
-
-    local TWW_ITEMS = GetConstants().TWW_ITEMS
-
-    -- 已有buff
-    if Catfish.API:UnitHasBuff("player", TWW_ITEMS.amaniWard.buffSpellID) then
-        return false
-    end
-
-    -- 没有物品
-    if not Catfish.API:PlayerHasItem(TWW_ITEMS.amaniWard.itemID) then
-        return false
-    end
-
-    return true
-end
-
--- 检查是否需要鱼饵
-local function NeedsTWWBait()
-    if not Catfish.db.tww or not Catfish.db.tww.selectedBait then
-        return false
-    end
-
-    local TWW_ITEMS = GetConstants().TWW_ITEMS
-    local baitKey = Catfish.db.tww.selectedBait
-    local baitData = TWW_ITEMS[baitKey .. "Bait"]
-
-    if not baitData then
-        return false
-    end
-
-    -- 已有buff
-    if Catfish.API:UnitHasBuff("player", baitData.buffSpellID) then
-        return false
-    end
-
-    -- 没有物品
-    if not Catfish.API:PlayerHasItem(baitData.itemID) then
-        return false
-    end
-
-    return true
-end
-
--- 获取阿曼尼结界名称
-local function GetAmaniWardName()
-    local TWW_ITEMS = GetConstants().TWW_ITEMS
-    return Catfish.API:GetItemName(TWW_ITEMS.amaniWard.itemID)
-end
-
--- 获取鱼饵名称
-local function GetTWWBaitName()
-    if not Catfish.db.tww or not Catfish.db.tww.selectedBait then
-        return nil
-    end
-    local TWW_ITEMS = GetConstants().TWW_ITEMS
-    local baitKey = Catfish.db.tww.selectedBait
-    local baitData = TWW_ITEMS[baitKey .. "Bait"]
-    if not baitData then
-        return nil
-    end
-    return Catfish.API:GetItemName(baitData.itemID)
-end
-
--- ============================================
 -- Public API
 -- ============================================
-
--- 检查是否需要任何物品（用于状态判断）
-function ItemManager:NeedsAnyItem()
-    return NeedsRaft() or NeedsGiganticBobber() or NeedsCustomBobber() or
-           NeedsAmaniWard() or NeedsTWWBait()
-end
 
 -- 检查是否已有木筏buff（用于游泳状态判断）
 function ItemManager:HasRaftBuff()
@@ -203,76 +80,11 @@ function ItemManager:HasRaftBuff()
     return false
 end
 
--- 获取玩具物品列表（不需要读条的玩具）
-function ItemManager:GetToyItemsToUse()
-    local items = {}
-
-    Catfish:Debug("GetToyItemsToUse: checking toys...")
-
-    -- 优先级：巨型鱼漂 → 自定义浮标（木筏需要读条，单独处理）
-    if NeedsGiganticBobber() then
-        local name = GetGiganticBobberName()
-        Catfish:Debug("GetToyItemsToUse: NeedsGiganticBobber=true, name=", tostring(name))
-        if name then table.insert(items, name) end
-    end
-
-    if NeedsCustomBobber() then
-        local name = GetCustomBobberName()
-        Catfish:Debug("GetToyItemsToUse: NeedsCustomBobber=true, name=", tostring(name))
-        if name then table.insert(items, name) end
-    end
-
-    Catfish:Debug("GetToyItemsToUse: total items=", #items)
-    return items
-end
-
--- 获取需要使用的GCD物品（需要读条的物品，优先级：木筏 > 结界 > 鱼饵）
-function ItemManager:GetGCDItemToUse()
-    -- 木筏优先级最高（游泳时必须先有木筏）
-    if NeedsRaft() then
-        local name = GetRaftName()
-        Catfish:Debug("GetGCDItemToUse: NeedsRaft=true, name=", tostring(name))
-        if name then return name end
-        -- 如果需要木筏但木筏不可用（冷却中），返回特殊标记
-        -- 这样调用方知道要等待而不是钓鱼
-        return "__RAFT_COOLDOWN__"
-    end
-
-    if NeedsAmaniWard() then
-        return GetAmaniWardName()
-    end
-
-    if NeedsTWWBait() then
-        return GetTWWBaitName()
-    end
-    return nil
-end
-
--- 检查是否需要使用GCD物品
-function ItemManager:NeedsGCDItem()
-    local item = self:GetGCDItemToUse()
-    return item ~= nil and item ~= "__RAFT_COOLDOWN__"
-end
-
--- 检查是否需要等待木筏（需要木筏但木筏冷却中）
-function ItemManager:IsWaitingForRaft()
-    return self:GetGCDItemToUse() == "__RAFT_COOLDOWN__"
-end
-
--- 生成GCD物品使用宏
-function ItemManager:GenerateGCDItemMacro()
-    local item = self:GetGCDItemToUse()
-    if item then
-        return "/use " .. item
-    end
-    return nil
-end
-
 -- 生成钓鱼筏宏
 function ItemManager:BuildDraftMacro()
     local name = GetRaftName()
     if name then
-        return "/use " .. name
+        return "/use [nocombat] " .. name
     end
 end
 
@@ -280,7 +92,7 @@ end
 function ItemManager:BuildGiganticBobberMacro()
     local name = GetGiganticBobberName()
     if name then
-        return "/use " .. name
+        return "/use [nocombat] " .. name
     end
 end
 
@@ -288,25 +100,8 @@ end
 function ItemManager:BuildCustomBobberMacro()
     local name = GetCustomBobberName()
     if name then
-        return "/use " .. name
+        return "/use [nocombat] " .. name
     end
-end
-
--- 生成钓鱼宏（玩具物品 + 钓鱼）
-function ItemManager:GenerateFishingMacro()
-    local lines = {}
-    local spellName = GetFishingSpellName() or "钓鱼"
-
-    -- 添加玩具物品
-    local toys = self:GetToyItemsToUse()
-    for _, item in ipairs(toys) do
-        table.insert(lines, "/use " .. item)
-    end
-
-    -- 最后施放钓鱼
-    table.insert(lines, "/cast " .. spellName)
-
-    return table.concat(lines, "\n")
 end
 
 -- 更新巨型鱼漂名称缓存
@@ -430,13 +225,4 @@ function ItemManager:HasOtherBobberBuff(currentToyID)
     return false
 end
 
--- 获取当前活跃的浮标buff spellID（如果有）
-function ItemManager:GetActiveBobberBuffSpellID()
-    for _, spellID in ipairs(GetConstants().BOBBER_SPELL_IDS) do
-        local hasBuff = Catfish.API:UnitHasBuff("player", spellID)
-        if hasBuff then
-            return spellID
-        end
-    end
-    return nil
-end
+

@@ -147,7 +147,7 @@ function StatusPoller:OnSwimmingStateChanged(isSwimming)
             Catfish.Modules.OneKey:OnSwimmingStateChanged(isSwimming)
         else
             -- 兼容：直接调用 UpdateBinding
-            Catfish.Modules.OneKey:UpdateBinding("OnSwimmingStateChanged")
+            Catfish.Modules.OneKey:UpdateBinding(Catfish.Modules.OneKey.BIND_REASON.SWIMMING_STATE)
         end
     end
     

@@ -34,20 +34,12 @@ for _, id in ipairs(FISHING_SPELL_IDS) do
     FISHING_SPELL_SET[id] = true
 end
 
-function API:GetFishingSpellIDs()
-    return FISHING_SPELL_IDS
-end
-
-function API:GetFishingSpellID()
-    return 7620 -- Base fishing spell ID
-end
-
 function API:IsFishingSpell(spellID)
     return FISHING_SPELL_SET[spellID] or false
 end
 
 function API:GetFishingSpellName()
-    local spellID = self:GetFishingSpellID()
+    local spellID = 7620
     if C_Spell and C_Spell.GetSpellInfo then
         local info = C_Spell.GetSpellInfo(spellID)
         return info and info.name
@@ -57,76 +49,9 @@ function API:GetFishingSpellName()
     return nil
 end
 
-function API:CanCastFishing()
-    -- Check if player has fishing skill
-    if not Catfish.hasFishingSkill then
-        return false
-    end
-
-    -- Check if not in combat
-    if InCombatLockdown() then
-        return false
-    end
-
-    -- Check if spell is usable (with compatibility)
-    local spellID = self:GetFishingSpellID()
-    if C_Spell and C_Spell.IsSpellUsable then
-        return C_Spell.IsSpellUsable(spellID)
-    elseif IsUsableSpell then
-        return IsUsableSpell(spellID)
-    end
-
-    -- Fallback: assume usable if we got here
-    return true
-end
-
-function API:CastFishing()
-    if self:CanCastFishing() then
-        -- Check and enable auto loot if needed
-        if Catfish.db.keepAutoLoot then
-            if GetCVar("autoLootDefault") ~= "1" then
-                SetCVar("autoLootDefault", "1")
-            end
-        end
-
-        local spellName = self:GetFishingSpellName()
-        if spellName then
-            if C_Spell and C_Spell.CastSpellByName then
-                C_Spell.CastSpellByName(spellName)
-            elseif CastSpellByName then
-                CastSpellByName(spellName)
-            end
-            return true
-        end
-    end
-    return false
-end
-
 -- ============================================
 -- Item APIs
 -- ============================================
-
-function API:GetItemInfo(itemID)
-    local name, link, quality, iLevel, reqLevel, class, subclass,
-          maxStack, equipSlot, texture, vendorPrice = GetItemInfo(itemID)
-    return {
-        name = name,
-        link = link,
-        quality = quality,
-        iLevel = iLevel,
-        reqLevel = reqLevel,
-        class = class,
-        subclass = subclass,
-        maxStack = maxStack,
-        equipSlot = equipSlot,
-        texture = texture,
-        vendorPrice = vendorPrice,
-    }
-end
-
-function API:GetItemLink(itemID)
-    return select(2, GetItemInfo(itemID))
-end
 
 function API:GetItemName(itemID)
     return select(1, GetItemInfo(itemID))
@@ -134,50 +59,6 @@ end
 
 function API:PlayerHasItem(itemID)
     return GetItemCount(itemID) > 0
-end
-
--- ============================================
--- Equipment APIs
--- ============================================
-
--- Inventory slots
-API.INVSLOT_HEAD = INVSLOT_HEAD or 1
-API.INVSLOT_NECK = INVSLOT_NECK or 2
-API.INVSLOT_SHOULDER = INVSLOT_SHOULDER or 3
-API.INVSLOT_CHEST = INVSLOT_CHEST or 5
-API.INVSLOT_WAIST = INVSLOT_WAIST or 6
-API.INVSLOT_LEGS = INVSLOT_LEGS or 7
-API.INVSLOT_FEET = INVSLOT_FEET or 8
-API.INVSLOT_WRIST = INVSLOT_WRIST or 9
-API.INVSLOT_HAND = INVSLOT_HAND or 10
-API.INVSLOT_FINGER1 = INVSLOT_FINGER1 or 11
-API.INVSLOT_FINGER2 = INVSLOT_FINGER2 or 12
-API.INVSLOT_TRINKET1 = INVSLOT_TRINKET1 or 13
-API.INVSLOT_TRINKET2 = INVSLOT_TRINKET2 or 14
-API.INVSLOT_MAINHAND = INVSLOT_MAINHAND or 16
-
-function API:GetInventoryItemLink(slot)
-    return GetInventoryItemLink("player", slot)
-end
-
-function API:GetInventoryItemID(slot)
-    return GetInventoryItemID("player", slot)
-end
-
-function API:EquipItemByName(itemNameOrLink)
-    if InCombatLockdown() then
-        return false
-    end
-    EquipItemByName(itemNameOrLink)
-    return true
-end
-
-function API:UseInventoryItem(slot)
-    if InCombatLockdown() then
-        return false
-    end
-    UseInventoryItem(slot)
-    return true
 end
 
 -- ============================================
@@ -199,10 +80,6 @@ function API:InitToyButton()
     -- Set initial valid state to prevent errors
     toyButton:SetAttribute("type", "item")
     toyButton:Hide()  -- Hide until needed
-end
-
-function API:GetToyButton()
-    return toyButton
 end
 
 function API:SetToyButtonMacro(macroText)
@@ -367,24 +244,8 @@ function API:GetPlayerName()
     return UnitName("player")
 end
 
-function API:GetPlayerGUID()
-    return UnitGUID("player")
-end
-
-function API:GetPlayerLevel()
-    return UnitLevel("player")
-end
-
-function API:IsPlayerMoving()
-    return IsPlayerMoving()
-end
-
 function API:IsPlayerSwimming()
     return IsSwimming()
-end
-
-function API:IsPlayerIndoors()
-    return IsIndoors()
 end
 
 -- ============================================
@@ -429,39 +290,9 @@ function API:InitInteractButton()
     interactButton:Hide()
 end
 
-function API:InteractWithSoftTarget()
-    -- Use the secure button to interact with soft target (bobber)
-    if interactButton and not InCombatLockdown() then
-        interactButton:Click()
-    end
-end
-
-function API:SetSoftInteract()
-    -- Can only set CVar out of combat - use CVars only on init
-    -- The soft interact system works through keybinding, not direct API calls
-    if not InCombatLockdown() then
-        SetCVar("SoftTargetInteract", "3")
-    end
-end
-
-function API:GetSoftInteractUnit()
-    if GetSoftInteractTarget then
-        return GetSoftInteractTarget()
-    end
-    return nil
-end
-
 -- ============================================
 -- Cooldown APIs
 -- ============================================
-
-function API:GetSpellCooldown(spellID)
-    local start, duration, enabled, modRate = GetSpellCooldown(spellID)
-    if start == 0 then
-        return 0
-    end
-    return start + duration - GetTime()
-end
 
 function API:GetItemCooldown(itemID)
     local start, duration, enable = C_Container.GetItemCooldown(itemID)
@@ -505,36 +336,4 @@ function API:UnitHasBuff(unit, spellID)
     return false, 0, 0
 end
 
-function API:GetWeaponEnchantInfo(mainHand)
-    local hasEnchant, expiration, charges, enchantID = GetWeaponEnchantInfo()
-    if mainHand then
-        return hasEnchant, expiration and (expiration / 1000) or 0, charges
-    end
-    return false, 0, 0
-end
 
--- ============================================
--- Timer/Schedule APIs
--- ============================================
-
-function API:ScheduleFunction(func, delay)
-    C_Timer.After(delay, func)
-end
-
--- ============================================
--- Debug Utilities
--- ============================================
-
-function API:DumpTable(t, indent)
-    if not Catfish.db.debugMode then return end
-
-    indent = indent or ""
-    for k, v in pairs(t) do
-        if type(v) == "table" then
-            print(indent .. tostring(k) .. ":")
-            self:DumpTable(v, indent .. "  ")
-        else
-            print(indent .. tostring(k) .. " = " .. tostring(v))
-        end
-    end
-end

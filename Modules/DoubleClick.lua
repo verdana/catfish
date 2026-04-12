@@ -22,16 +22,6 @@ DoubleClick.bindingFrame = nil
 -- Override Binding Management
 -- ============================================
 
-local function GetFishingSpellName()
-    -- Use C_Spell API for modern WoW
-    if C_Spell and C_Spell.GetSpellInfo then
-        local info = C_Spell.GetSpellInfo(7620)
-        return info and info.name
-    else
-        return GetSpellInfo and GetSpellInfo(7620)
-    end
-end
-
 -- Check if player has the "安详垂钓" (Serene Fishing) buff
 -- This buff is present while fishing and disappears when reeling in
 local function HasFishingBuff()
@@ -48,46 +38,6 @@ local function HasFishingBuff()
         end
     end
     return false
-end
-
--- Check if player needs to use Gigantic Bobber toy
-local GIGANTIC_BOBBER_NAME = nil  -- Will be cached on first use
-
-local function GetGiganticBobberName()
-    if GIGANTIC_BOBBER_NAME then
-        return GIGANTIC_BOBBER_NAME
-    end
-    local name = Catfish.API:GetItemName(Catfish.Data.Constants.GIGANTIC_BOBBER.TOY_ID)
-    if name then
-        GIGANTIC_BOBBER_NAME = name  -- 只缓存有效名称
-    end
-    return name
-end
-
-local function NeedsGiganticBobber()
-    if not Catfish.db.useGiganticBobber then
-        return false
-    end
-
-    -- Check if player already has the buff
-    local hasBuff = Catfish.API:UnitHasBuff("player", Catfish.Data.Constants.GIGANTIC_BOBBER.BUFF_ID)
-    if hasBuff then
-        return false
-    end
-
-    -- Check if player has the toy
-    local hasToy = Catfish.API:PlayerHasToy(Catfish.Data.Constants.GIGANTIC_BOBBER.TOY_ID)
-    if not hasToy then
-        return false
-    end
-
-    -- Check if toy is on cooldown
-    local cooldown = Catfish.API:GetToyCooldown(Catfish.Data.Constants.GIGANTIC_BOBBER.TOY_ID)
-    if cooldown > 0 then
-        return false
-    end
-
-    return true
 end
 
 local function SetFishingBinding()
@@ -108,14 +58,14 @@ local function SetFishingBinding()
         return success
     else
         -- Check if we need to use Gigantic Bobber toy first
-        if NeedsGiganticBobber() then
-            -- Set up the toy button with macro (like Angleur does)
-            local toyName = GetGiganticBobberName()
-            if toyName and toyName ~= "" then
-                Catfish.API:SetToyButtonMacro(toyName)
+        if Catfish.Modules.ItemManager:NeedsGiganticBobber() then
+            -- Set up the toy button with macro
+            local macro = Catfish.Modules.ItemManager:BuildGiganticBobberMacro()
+            if macro and macro ~= "" then
+                Catfish.API:SetToyButtonMacro(macro)
                 -- Bind to click the toy button
                 local success = SetOverrideBindingClick(DoubleClick.bindingFrame, true, DoubleClick.bindKey, "CatfishToyButton")
-                Catfish:Debug("SetOverrideBindingClick:", DoubleClick.bindKey, "-> CatfishToyButton, toyName:", toyName, "success:", tostring(success))
+                Catfish:Debug("SetOverrideBindingClick:", DoubleClick.bindKey, "-> CatfishToyButton, success:", tostring(success))
                 return success
             else
                 -- Toy name not available yet, fall back to fishing spell
@@ -125,7 +75,7 @@ local function SetFishingBinding()
         end
 
         -- Bind to fishing spell for casting
-        local spellName = GetFishingSpellName()
+        local spellName = Catfish.API:GetFishingSpellName()
         if not spellName then
             Catfish:Print("Error: Cannot find fishing spell name")
             return false

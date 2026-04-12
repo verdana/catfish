@@ -16,19 +16,27 @@ OneKey.autoButton = nil
 OneKey.lastBindingUpdate = 0
 OneKey.bindingDebounce = 0.05  -- 50ms 防抖
 
--- ============================================
--- Helper Functions
--- ============================================
-
-local function GetFishingSpellName()
-    if C_Spell and C_Spell.GetSpellInfo then
-        local info = C_Spell.GetSpellInfo(7620)
-        return info and info.name
-    elseif GetSpellInfo then
-        return GetSpellInfo(7620)
-    end
-    return nil
-end
+-- UpdateBinding 调用原因枚举
+local BIND_REASON = {
+    INIT = "init",
+    BUTTON_SHOW = "button-show",
+    KEYBIND_SET = "keybind-set",
+    STATE_CHANGED = "state-changed",
+    SWIMMING_STATE = "swimming-state",
+    COMBAT_END = "combat-end",
+    MOUNT_CHANGED = "mount-changed",
+    ITEM_LOADED = "item-loaded",
+    RAFT_GAINED = "raft-gained",
+    RAFT_LOST = "raft-lost",
+    RAFT_REFRESHED = "raft-refreshed",
+    GIGANTIC_BOBBER_GAINED = "gigantic-bobber-gained",
+    GIGANTIC_BOBBER_LOST = "gigantic-bobber-lost",
+    GIGANTIC_BOBBER_REFRESHED = "gigantic-bobber-refreshed",
+    CUSTOM_BOBBER_GAINED = "custom-bobber-gained",
+    CUSTOM_BOBBER_LOST = "custom-bobber-lost",
+    CUSTOM_BOBBER_REFRESHED = "custom-bobber-refreshed",
+}
+OneKey.BIND_REASON = BIND_REASON
 
 -- 检查是否有钓鱼buff（正在钓鱼中）
 local function HasFishingBuff()
@@ -45,36 +53,6 @@ local function HasBobber()
         return GetSoftInteractTarget() ~= nil
     end
     return false
-end
-
--- 检查是否应该解除绑定（让按键保持原有功能）
-local function ShouldUnbind()
-    if InCombatLockdown() then
-        return true, "combat"
-    end
-
-    -- 坐骑上 → 解除绑定
-    if IsMounted() then
-        return true, "mounted"
-    end
-
-    -- 游泳中检查
-    if IsSwimming() then
-        local ItemManager = Catfish.Modules.ItemManager
-        local config = Catfish.db.toys
-
-        -- 配置了木筏且已有木筏buff → 解除绑定让用户上浮到木筏上
-        if config.raftMode ~= "none" and ItemManager:HasRaftBuff() then
-            return true, "swimming with raft"
-        end
-
-        -- 其他游泳情况（需要木筏或没配置木筏）→ 不解除绑定
-        -- 需要木筏时，按键会触发使用木筏
-        -- 没配置木筏时，按键会尝试钓鱼（会失败，但这是用户的选择）
-        return false, nil
-    end
-
-    return false, nil
 end
 
 -- ============================================
@@ -101,7 +79,7 @@ local function CreateAutoButton()
     button:Hide()
     button:SetAttribute("type", "macro")
     button:SetScript("OnShow", function()
-        OneKey:UpdateBinding(1)
+        OneKey:UpdateBinding(BIND_REASON.BUTTON_SHOW)
     end)
     button:SetScript("OnHide", function()
         ClearOverrideBindings(button)
@@ -128,10 +106,6 @@ local BLOCKED_KEYS = {
     ["BUTTON2"] = true,
     ["BUTTON3"] = true,
 }
-
--- 默认绑定
-function OneKey:DefaultBinding()
-end
 
 -- 更新绑定（核心逻辑）
 function OneKey:UpdateBinding(id)
@@ -250,34 +224,8 @@ function OneKey:UpdateBinding(id)
         end
     end
 
-    -- 检查是否需要先使用GCD物品（木筏/结界/鱼饵）
-    -- local needsGCD = ItemManager:NeedsGCDItem()
-    -- Catfish:Print("NeedsGCDItem:", needsGCD)
-    -- if needsGCD then
-    --     local macro = ItemManager:GenerateGCDItemMacro()
-    --     Catfish:Print("GCD macro:", macro)
-    --     if macro then
-    --         Catfish.API:SetToyButtonMacro(macro)
-    --         SetOverrideBindingClick(self.autoButton, true, normalizedKey, "CatfishToyButton")
-    --         Catfish:Print("OneKey: Bound to GCD item (raft)")
-    --         -- 不设置定时器！用户需要先上浮到木筏上
-    --         -- 游泳状态变化（离开游泳）时会自动触发更新
-    --         return
-    --     end
-    -- end
-
-    -- 无浮漂且无GCD物品 → 生成钓鱼宏（玩具+钓鱼）
-    -- local macro = ItemManager:GenerateFishingMacro()
-    -- Catfish:Debug("Fishing macro:", macro)
-    -- if macro and macro ~= "" then
-    --     Catfish.API:SetToyButtonMacro(macro)
-    --     SetOverrideBindingClick(self.autoButton, true, normalizedKey, "CatfishToyButton")
-    --     Catfish:Debug("OneKey: Bound to fishing macro")
-    --     return
-    -- end
-
     -- 无物品需要使用，直接绑定钓鱼法术
-    local spellName = GetFishingSpellName()
+    local spellName = Catfish.API:GetFishingSpellName()
     if spellName then
         SetOverrideBindingSpell(self.autoButton, true, normalizedKey, spellName)
         Catfish:Debug("OneKey: Bound to fishing spell:", spellName)
@@ -311,7 +259,7 @@ function OneKey:SetKeybind(keyOrButton)
     -- 保存并更新
     self.keybind = keyOrButton
     CatfishCharDB.keybinding = keyOrButton
-    self:UpdateBinding(3)
+    self:UpdateBinding(BIND_REASON.KEYBIND_SET)
 
     Catfish:Print("快捷键已设置为: " .. keyOrButton)
     return true
@@ -346,7 +294,7 @@ function OneKey:OnStateChanged(state)
     if not self.autoButton or not self.autoButton:IsVisible() or not self.keybind then
         return
     end
-    self:UpdateBinding(4)
+    self:UpdateBinding(BIND_REASON.STATE_CHANGED)
 end
 
 -- ============================================
@@ -378,16 +326,12 @@ end
 -- 游泳状态变化回调（由 StatusPoller 调用）
 function OneKey:OnSwimmingStateChanged(isSwimming)
     Catfish:Debug("OneKey: OnSwimmingStateChanged - isSwimming:", tostring(isSwimming))
-    self:UpdateBinding("swimming-state-changed")
+    self:UpdateBinding(BIND_REASON.SWIMMING_STATE)
 end
 
 -- ============================================
--- Compatibility Stubs (for other modules)
+-- Utility
 -- ============================================
-
-function OneKey:OnToyUsed(toyID)
-    -- 由 ItemManager 处理，此处仅作兼容
-end
 
 function OneKey:UpdateGiganticBobberCache()
     Catfish.Modules.ItemManager:UpdateGiganticBobberCache()

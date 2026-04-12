@@ -285,7 +285,7 @@ frame:SetScript("OnEvent", function(self, event, arg1, ...)
         -- Update OneKey binding after a short delay to allow item data to load
         C_Timer.After(1.0, function()
             if Catfish.Modules.OneKey then
-                Catfish.Modules.OneKey:UpdateBinding(0)
+                Catfish.Modules.OneKey:UpdateBinding(Catfish.Modules.OneKey.BIND_REASON.INIT)
             end
         end)
 
