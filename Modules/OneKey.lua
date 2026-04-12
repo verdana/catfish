@@ -23,6 +23,7 @@ local BIND_REASON = {
     KEYBIND_SET = "keybind-set",
     STATE_CHANGED = "state-changed",
     SWIMMING_STATE = "swimming-state",
+    SUBMERGED_STATE = "submerged-state",
     COMBAT_END = "combat-end",
     MOUNT_CHANGED = "mount-changed",
     ITEM_LOADED = "item-loaded",
@@ -151,6 +152,7 @@ function OneKey:UpdateBinding(id)
     if IsSwimming() then
         local ItemManager = Catfish.Modules.ItemManager
         local config = Catfish.db.toys
+        local StatusPoller = Catfish.Core.StatusPoller
 
         -- 配置了木筏
         if config.raftMode ~= "none" then
@@ -159,26 +161,40 @@ function OneKey:UpdateBinding(id)
             if ItemManager:HasRaftBuff() then
                 Catfish:Debug("OneKey: swimming with raft buff - unbinding")
 
-                -- 启动轮询，等待离开游泳状态（站上木筏）
-                local StatusPoller = Catfish.Core.StatusPoller
+                -- 启动持续轮询，等待离开游泳状态（站上木筏）后重新绑定钓鱼
                 if StatusPoller and not StatusPoller:IsPolling() then
-                    StatusPoller:StartPolling("raft-waiting-surface")
+                    StatusPoller:StartPolling("swimming-raft-monitor")
                 end
                 return
             end
 
-            -- 没有木筏buff → 绑定使用木筏
-            local macro = ItemManager:BuildDraftMacro()
-            if macro then
-                Catfish.API:SetToyButtonMacro(macro)
-                SetOverrideBindingClick(self.autoButton, true, normalizedKey, "CatfishToyButton")
-                Catfish:Debug("OneKey: swimming, bound to raft")
-                return
+            -- 无木筏buff：区分水下/水面
+            local ok, isSubmerged = pcall(IsSubmerged)
+            if not ok then isSubmerged = false end
+
+            if isSubmerged then
+                -- 水下 + 无木筏buff → 绑定使用木筏
+                local macro = ItemManager:BuildDraftMacro()
+                if macro then
+                    Catfish.API:SetToyButtonMacro(macro)
+                    SetOverrideBindingClick(self.autoButton, true, normalizedKey, "CatfishToyButton")
+                    Catfish:Debug("OneKey: swimming underwater, bound to raft")
+                end
+            else
+                -- 水面 + 无木筏buff → 解除绑定，恢复原键功能（跳跃）
+                Catfish:Debug("OneKey: swimming on surface, no raft buff - unbinding for jump")
             end
+
+            -- 启动持续轮询监控潜水状态变化
+            if StatusPoller and not StatusPoller:IsPolling() then
+                StatusPoller:StartPolling("swimming-raft-monitor")
+            end
+            return
         end
 
-        -- 没配置木筏 → 尝试钓鱼（会失败，但这是用户的选择）
-        -- 继续下面的逻辑
+        -- 没配置木筏 → 游泳无法钓鱼，保持按键原始功能
+        Catfish:Debug("OneKey: swimming without raft config - unbinding")
+        return
     end
 
     -- 有浮漂或有钓鱼buff → 收杆
@@ -327,6 +343,12 @@ end
 function OneKey:OnSwimmingStateChanged(isSwimming)
     Catfish:Debug("OneKey: OnSwimmingStateChanged - isSwimming:", tostring(isSwimming))
     self:UpdateBinding(BIND_REASON.SWIMMING_STATE)
+end
+
+-- 潜水状态变化回调（由 StatusPoller 调用）
+function OneKey:OnSubmergedStateChanged(isSubmerged)
+    Catfish:Debug("OneKey: OnSubmergedStateChanged - isSubmerged:", tostring(isSubmerged))
+    self:UpdateBinding(BIND_REASON.SUBMERGED_STATE)
 end
 
 -- ============================================

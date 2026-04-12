@@ -16,6 +16,7 @@ local isPolling = false
 local pollStartTime = 0
 local pollReason = ""
 local lastSwimmingState = nil
+local lastSubmergedState = nil
 local lastPollTime = 0
 
 -- ============================================
@@ -24,6 +25,12 @@ local lastPollTime = 0
 
 local MAX_POLL_DURATION = 8   -- 最长轮询时间（秒），足够从水下浮到水面
 local POLL_INTERVAL = 0.05    -- 轮询间隔（秒），20帧检测一次
+local SUBMERGED_POLL_INTERVAL = 0.2  -- 潜水状态轮询间隔（秒），5次/秒
+
+-- 无超时限制的轮询模式（游泳监控等持续场景）
+local NO_TIMEOUT_REASONS = {
+    ["swimming-raft-monitor"] = true,
+}
 
 -- ============================================
 -- Public API
@@ -44,6 +51,9 @@ function StatusPoller:StartPolling(reason)
     isPolling = true
     pollStartTime = GetTime()
     lastSwimmingState = IsSwimming()
+    -- 安全获取 IsSubmerged，某些特殊场景可能不可用
+    local ok, submerged = pcall(IsSubmerged)
+    lastSubmergedState = ok and submerged or false
     pollReason = reason
     lastPollTime = 0
     
@@ -87,13 +97,14 @@ function StatusPoller:OnUpdate(elapsed)
     local now = GetTime()
     
     -- 限制轮询频率
-    if now - lastPollTime < POLL_INTERVAL then
+    local interval = NO_TIMEOUT_REASONS[pollReason] and SUBMERGED_POLL_INTERVAL or POLL_INTERVAL
+    if now - lastPollTime < interval then
         return
     end
     lastPollTime = now
     
-    -- 检查超时
-    if now - pollStartTime > MAX_POLL_DURATION then
+    -- 检查超时（无超时模式跳过）
+    if not NO_TIMEOUT_REASONS[pollReason] and now - pollStartTime > MAX_POLL_DURATION then
         Catfish:Debug("StatusPoller: timeout after", MAX_POLL_DURATION, "seconds, stopping")
         self:StopPolling()
         return
@@ -110,6 +121,20 @@ function StatusPoller:OnUpdate(elapsed)
         
         -- 触发状态变化回调
         self:OnSwimmingStateChanged(currentSwimming)
+    end
+    
+    -- 检测潜水状态变化（仅在游泳中检测）
+    if currentSwimming then
+        local ok, currentSubmerged = pcall(IsSubmerged)
+        if not ok then currentSubmerged = false end
+        if currentSubmerged ~= lastSubmergedState then
+            Catfish:Debug("StatusPoller: SUBMERGED STATE CHANGED:",
+                tostring(lastSubmergedState), "->", tostring(currentSubmerged),
+                "reason:", pollReason)
+            
+            lastSubmergedState = currentSubmerged
+            self:OnSubmergedStateChanged(currentSubmerged)
+        end
     end
     
     -- 检测木筏BUFF变化
@@ -157,6 +182,13 @@ function StatusPoller:OnSwimmingStateChanged(isSwimming)
     end
 end
 
+-- 潜水状态变化回调
+function StatusPoller:OnSubmergedStateChanged(isSubmerged)
+    if Catfish.Modules.OneKey and Catfish.Modules.OneKey.OnSubmergedStateChanged then
+        Catfish.Modules.OneKey:OnSubmergedStateChanged(isSubmerged)
+    end
+end
+
 -- ============================================
 -- 初始化
 -- ============================================
@@ -164,5 +196,7 @@ end
 function StatusPoller:Init()
     -- 初始化游泳状态
     lastSwimmingState = IsSwimming()
-    Catfish:Debug("StatusPoller: initialized, current swimming:", tostring(lastSwimmingState))
+    local ok, submerged = pcall(IsSubmerged)
+    lastSubmergedState = ok and submerged or false
+    Catfish:Debug("StatusPoller: initialized, swimming:", tostring(lastSwimmingState), "submerged:", tostring(lastSubmergedState))
 end

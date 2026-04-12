@@ -77,8 +77,6 @@ function Statistics:RecordCatch(itemID)
     end
     Catfish.db.stats.zones[zoneID].items[itemID] =
         Catfish.db.stats.zones[zoneID].items[itemID] + 1
-
-    Catfish:Debug("Recorded catch:", itemName, "Total:", Catfish.db.stats.total.catches)
 end
 
 -- ============================================
@@ -116,6 +114,7 @@ function Statistics:OnLootClosed()
     end
 
     -- Record all looted items
+    local itemCount = 0
     for itemID, quantity in pairs(self.currentLootItems) do
         -- Check quality once before recording
         local quality = select(3, GetItemInfo(itemID))
@@ -124,11 +123,17 @@ function Statistics:OnLootClosed()
         for i = 1, quantity do
             self:RecordCatch(itemID)
         end
+        itemCount = itemCount + 1
 
         -- Announce rare catch only once per item type
         if quality and quality >= 3 then
             self:AnnounceRareCatch(itemID, quantity)
         end
+    end
+
+    -- Summary debug log (once per loot)
+    if itemCount > 0 then
+        Catfish:Debug("Recorded catch:", itemCount, "item type(s), Total:", Catfish.db.stats.total.catches)
     end
 
     -- Clear loot tracking
