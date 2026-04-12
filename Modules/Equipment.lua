@@ -150,7 +150,6 @@ end
 
 function Equipment:Init()
     -- Initial scan
-    self:ScanBags()
-
+    -- self:ScanBags()
     Catfish:Debug("Equipment module initialized")
 end

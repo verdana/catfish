@@ -98,8 +98,6 @@ function StatsHUD:CreateFrame()
 
     self.frame = frame
     frame:Hide()
-
-    Catfish:Debug("StatsHUD frame created")
 end
 
 -- ============================================

@@ -293,7 +293,7 @@ end
 
 function Toys:Init()
     -- Scan for owned toys
-    self:ScanToys()
+    -- self:ScanToys()
     -- Catfish:Debug("Toys module initialized")
 end
 

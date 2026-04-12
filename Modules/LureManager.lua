@@ -103,7 +103,6 @@ end
 
 function LureManager:Init()
     -- Initial scan
-    self:ScanBags()
-
+    -- self:ScanBags()
     Catfish:Debug("LureManager initialized")
 end
