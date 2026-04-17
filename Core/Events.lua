@@ -271,6 +271,7 @@ function Events.PLAYER_MOUNT_DISPLAY_CHANGED()
 end
 
 function Events.MOUNT_JOURNAL_USABILITY_CHANGED(...)
+	Catfish:Info("Mount journal usability changed")
 	-- 坐骑可用性变化时更新绑定
 	-- 可用来检测玩家在水下以及跃出水面
 	if Catfish.Modules.OneKey and Catfish.Modules.OneKey.UpdateBinding then

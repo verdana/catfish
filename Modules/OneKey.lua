@@ -142,15 +142,15 @@ function OneKey:UpdateBinding(id)
         return
     end
 
+    local config = Catfish.db.toys
+    Catfish:Info("-> config.raftMode = ", config.raftMode, ", isswimming = ", IsSwimming())
+
     -- 当前绑定的按键
     local normalizedKey = KEY_NORMALIZE[self.keybind] or self.keybind
-
-    -- Catfish:Debug("UpdateBinding id:", id, "IsSwimming:", IsSwimming(), "IsMounted:", IsMounted(), "InCombat:", InCombatLockdown())
 
     -- 游泳状态特殊处理
     if IsSwimming() then
         local ItemManager = Catfish.Modules.ItemManager
-        local config = Catfish.db.toys
         local StatusPoller = Catfish.Core.StatusPoller
 
         -- 配置了木筏
@@ -182,7 +182,7 @@ function OneKey:UpdateBinding(id)
         end
 
         -- 没配置木筏 → 游泳无法钓鱼，保持按键原始功能
-        Catfish:Debug("OneKey: swimming without raft config - unbinding")
+        Catfish:Info("OneKey: swimming without raft config - unbinding")
         return
     end
 

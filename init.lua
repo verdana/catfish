@@ -178,6 +178,11 @@ SlashCmdList["CATFISH"] = function(msg)
     end
 end
 
+-- Info function
+function Catfish:Info(...)
+    print("|cFF00FF00[Catfish]|r ", ...)
+end
+
 -- Print function
 function Catfish:Print(...)
     print("|cFF00FF00[Catfish]|r ", ...)
