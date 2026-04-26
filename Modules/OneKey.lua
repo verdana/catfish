@@ -127,6 +127,12 @@ function OneKey:UpdateBinding(id)
         return
     end
 
+    -- 按键按下时不修改绑定，防止按键被按住时的死循环
+    local normalizedKey = KEY_NORMALIZE[self.keybind] or self.keybind
+    if IsKeyDown(normalizedKey) then
+        return
+    end
+
     -- 如果进入战斗，清除绑定，不再继续绑定新功能
     if InCombatLockdown() then
         Catfish:Debug("OneKey: In combat lockdown, skip binding")
@@ -143,10 +149,6 @@ function OneKey:UpdateBinding(id)
     end
 
     local config = Catfish.db.toys
-    Catfish:Info("-> config.raftMode = ", config.raftMode, ", isswimming = ", IsSwimming())
-
-    -- 当前绑定的按键
-    local normalizedKey = KEY_NORMALIZE[self.keybind] or self.keybind
 
     -- 游泳状态特殊处理
     if IsSwimming() then
@@ -162,21 +164,12 @@ function OneKey:UpdateBinding(id)
                 return
             end
 
-            -- 无木筏buff：区分水下/水面
-            local ok, isSubmerged = pcall(IsSubmerged)
-            if not ok then isSubmerged = false end
-
-            if isSubmerged then
-                -- 水下 + 无木筏buff → 绑定使用木筏
-                local macro = ItemManager:BuildDraftMacro()
-                if macro then
-                    Catfish.API:SetToyButtonMacro(macro)
-                    SetOverrideBindingClick(self.autoButton, true, normalizedKey, "CatfishToyButton")
-                    Catfish:Debug("OneKey: swimming underwater, bound to raft")
-                end
-            else
-                -- 水面 + 无木筏buff → 解除绑定，恢复原键功能（跳跃）
-                Catfish:Debug("OneKey: swimming on surface, no raft buff - unbinding for jump")
+            -- 无木筏buff：水下和水面都绑定使用木筏
+            local macro = ItemManager:BuildDraftMacro()
+            if macro then
+                Catfish.API:SetToyButtonMacro(macro)
+                SetOverrideBindingClick(self.autoButton, true, normalizedKey, "CatfishToyButton")
+                Catfish:Debug("OneKey: swimming, bound to raft")
             end
             return
         end
