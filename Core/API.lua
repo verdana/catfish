@@ -274,6 +274,38 @@ function API:GetZoneName()
 end
 
 -- ============================================
+-- The War Within Zone Check
+-- ============================================
+
+-- 检查当前是否在至暗之夜地图（递归检查父级地图）
+function API:IsInTWWZone()
+    local mapID = C_Map.GetBestMapForUnit("player")
+    if not mapID then return false end
+
+    local twwMapIDs = Catfish.Data.Constants.TWW_MAP_IDS
+
+    -- 递归向上查找父级地图
+    while mapID do
+        -- 检查当前层级是否匹配
+        for _, id in ipairs(twwMapIDs) do
+            if mapID == id then
+                return true
+            end
+        end
+
+        -- 向上查找父级
+        local mapInfo = C_Map.GetMapInfo(mapID)
+        if not mapInfo or not mapInfo.parentMapID or mapInfo.parentMapID == 0 then
+            break
+        end
+
+        mapID = mapInfo.parentMapID
+    end
+
+    return false
+end
+
+-- ============================================
 -- Interaction APIs
 -- ============================================
 

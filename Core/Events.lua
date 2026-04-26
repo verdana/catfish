@@ -477,6 +477,92 @@ local function isCustomBobberBuffRefreshed(info)
     return false
 end
 
+-- ============================================
+-- TWW Items Buff Detection (至暗之夜物品)
+-- ============================================
+
+local twwAuras = {}
+
+local function isTWWAmaniWardBuffGained(info)
+    if not info or not info.addedAuras then
+        return false
+    end
+    local amaniWardSpellID = Catfish.Data.Constants.TWW_ITEMS.amaniWard.buffSpellID
+    for _, aura in ipairs(info.addedAuras) do
+        local ok, match = pcall(function()
+            return aura.spellId == amaniWardSpellID
+        end)
+        if ok and match then
+            Catfish:Debug("Gain Amani Ward buff: " .. aura.spellId)
+            twwAuras[aura.auraInstanceID] = aura.spellId
+            return true
+        end
+    end
+    return false
+end
+
+local function isTWWAmaniWardBuffLost(info)
+    if not info or not info.removedAuraInstanceIDs then
+        return false
+    end
+    local amaniWardSpellID = Catfish.Data.Constants.TWW_ITEMS.amaniWard.buffSpellID
+    for _, instanceId in pairs(info.removedAuraInstanceIDs) do
+        if twwAuras[instanceId] == amaniWardSpellID then
+            Catfish:Debug("Lost Amani Ward buff: " .. twwAuras[instanceId])
+            twwAuras[instanceId] = nil
+            return true
+        end
+    end
+    return false
+end
+
+local function isTWWBaitBuffGained(info)
+    if not info or not info.addedAuras then
+        return false
+    end
+    local TWW_ITEMS = Catfish.Data.Constants.TWW_ITEMS
+    local selectedBait = Catfish.db.tww and Catfish.db.tww.selectedBait
+    if not selectedBait then return false end
+
+    local baitKey = selectedBait .. "Bait"
+    local baitData = TWW_ITEMS[baitKey]
+    if not baitData then return false end
+
+    for _, aura in ipairs(info.addedAuras) do
+        local ok, match = pcall(function()
+            return aura.spellId == baitData.buffSpellID
+        end)
+        if ok and match then
+            Catfish:Debug("Gain TWW bait buff: " .. aura.spellId)
+            twwAuras[aura.auraInstanceID] = aura.spellId
+            return true
+        end
+    end
+    return false
+end
+
+local function isTWWBaitBuffLost(info)
+    if not info or not info.removedAuraInstanceIDs then
+        return false
+    end
+    local TWW_ITEMS = Catfish.Data.Constants.TWW_ITEMS
+    local selectedBait = Catfish.db.tww and Catfish.db.tww.selectedBait
+    if not selectedBait then return false end
+
+    local baitKey = selectedBait .. "Bait"
+    local baitData = TWW_ITEMS[baitKey]
+    if not baitData then return false end
+
+    for _, instanceId in pairs(info.removedAuraInstanceIDs) do
+        if twwAuras[instanceId] == baitData.buffSpellID then
+            Catfish:Debug("Lost TWW bait buff: " .. twwAuras[instanceId])
+            twwAuras[instanceId] = nil
+            return true
+        end
+    end
+    return false
+end
+
 
 function Events.UNIT_AURA(unit, info)
 	if unit ~= "player" then
@@ -550,6 +636,30 @@ function Events.UNIT_AURA(unit, info)
 	-- 自定义浮标 BUFF 刷新
 	if isCustomBobberBuffRefreshed(info) then
 		Catfish.Modules.OneKey:UpdateBinding(Catfish.Modules.OneKey.BIND_REASON.CUSTOM_BOBBER_REFRESHED)
+		return
+	end
+
+	-- TWW 阿曼尼结界 BUFF 获取
+	if isTWWAmaniWardBuffGained(info) then
+		Catfish.Modules.OneKey:UpdateBinding(Catfish.Modules.OneKey.BIND_REASON.TWW_AMANI_WARD_GAINED)
+		return
+	end
+
+	-- TWW 阿曼尼结界 BUFF 失去
+	if isTWWAmaniWardBuffLost(info) then
+		Catfish.Modules.OneKey:UpdateBinding(Catfish.Modules.OneKey.BIND_REASON.TWW_AMANI_WARD_LOST)
+		return
+	end
+
+	-- TWW 鱼饵 BUFF 获取
+	if isTWWBaitBuffGained(info) then
+		Catfish.Modules.OneKey:UpdateBinding(Catfish.Modules.OneKey.BIND_REASON.TWW_BAIT_GAINED)
+		return
+	end
+
+	-- TWW 鱼饵 BUFF 失去
+	if isTWWBaitBuffLost(info) then
+		Catfish.Modules.OneKey:UpdateBinding(Catfish.Modules.OneKey.BIND_REASON.TWW_BAIT_LOST)
 		return
 	end
 end

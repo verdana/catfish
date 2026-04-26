@@ -397,12 +397,17 @@ function Options:BuildSettings(cat)
             else
                 db.tww.selectedBait = nil
             end
+            -- 更新绑定
+            if Catfish.Modules.OneKey then
+                Catfish.Modules.OneKey:UpdateBinding("tww-bait-changed")
+            end
         end,
         optionfunc = function()
             return {
                 [""] = "无",
                 ["fortune"] = "好运神灵鱼诱饵",
                 ["octopus"] = "不祥章鱼诱饵",
+                ["bloodhunter"] = "鲜血猎手诱饵",
             }
         end,
     })

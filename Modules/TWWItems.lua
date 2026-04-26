@@ -113,6 +113,8 @@ function TWWItems:UseSelectedBait()
         return self:UseItem("fortuneBait")
     elseif baitKey == "octopus" then
         return self:UseItem("octopusBait")
+    elseif baitKey == "bloodhunter" then
+        return self:UseItem("bloodhunterBait")
     end
 
     return false

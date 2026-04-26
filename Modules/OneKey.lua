@@ -36,6 +36,10 @@ local BIND_REASON = {
     CUSTOM_BOBBER_GAINED = "custom-bobber-gained",
     CUSTOM_BOBBER_LOST = "custom-bobber-lost",
     CUSTOM_BOBBER_REFRESHED = "custom-bobber-refreshed",
+    TWW_AMANI_WARD_GAINED = "tww-amani-ward-gained",
+    TWW_AMANI_WARD_LOST = "tww-amani-ward-lost",
+    TWW_BAIT_GAINED = "tww-bait-gained",
+    TWW_BAIT_LOST = "tww-bait-lost",
 }
 OneKey.BIND_REASON = BIND_REASON
 
@@ -218,6 +222,28 @@ function OneKey:UpdateBinding(id)
             Catfish.API:SetToyButtonMacro(macro)
             SetOverrideBindingClick(self.autoButton, true, normalizedKey, "CatfishToyButton")
             Catfish:Debug("OneKey: bound to custom bobber")
+            return
+        end
+    end
+
+    -- 检查是否需要阿曼尼结界
+    if ItemManager:NeedsAmaniWard() then
+        local macro = ItemManager:BuildAmaniWardMacro()
+        if macro then
+            Catfish.API:SetToyButtonMacro(macro)
+            SetOverrideBindingClick(self.autoButton, true, normalizedKey, "CatfishToyButton")
+            Catfish:Debug("OneKey: bound to Amani Ward")
+            return
+        end
+    end
+
+    -- 检查是否需要鱼饵
+    if ItemManager:NeedsBait() then
+        local macro = ItemManager:BuildBaitMacro()
+        if macro then
+            Catfish.API:SetToyButtonMacro(macro)
+            SetOverrideBindingClick(self.autoButton, true, normalizedKey, "CatfishToyButton")
+            Catfish:Debug("OneKey: bound to bait")
             return
         end
     end

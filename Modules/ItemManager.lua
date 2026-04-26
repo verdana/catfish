@@ -124,23 +124,24 @@ end
 -- 检查是否需要木筏
 function ItemManager:NeedsRaft()
     local config = Catfish.db.toys
-    -- Catfish:Print("NeedsRaft: raftMode=", tostring(config.raftMode), " isSwimming=", tostring(IsSwimming()))
 
     if config.raftMode == "none" then
         return false
     end
 
-    -- 检查是否已有木筏buff，且剩余时间大于60秒
+    -- 检查是否已有木筏buff（剩余时间大于60秒）
     for _, spellID in ipairs(GetConstants().RAFT_SPELL_IDS) do
         local hasBuff, remaining = Catfish.API:UnitHasBuff("player", spellID)
-        if hasBuff then
-            -- 如果buff剩余时间大于60秒，不需要重新使用
-            if remaining > 60 then
-                -- Catfish:Debug("NeedsRaft: already has raft buff, remaining:", remaining)
-                return false
-            end
+        if hasBuff and remaining > 60 then
+            return false
         end
     end
+
+    -- 非游泳状态下不需要使用木筏
+    if not IsSwimming() then
+        return false
+    end
+
     return true
 end
 
@@ -223,6 +224,95 @@ function ItemManager:HasOtherBobberBuff(currentToyID)
         end
     end
     return false
+end
+
+-- ============================================
+-- The War Within Items (至暗之夜物品)
+-- ============================================
+
+-- 检查是否需要阿曼尼结界
+function ItemManager:NeedsAmaniWard()
+    -- 首先检查是否在至暗之夜地图
+    if not Catfish.API:IsInTWWZone() then
+        return false
+    end
+
+    -- 检查设置是否启用
+    if not Catfish.db.tww or not Catfish.db.tww.useAmaniWard then
+        return false
+    end
+
+    local TWW_ITEMS = Catfish.Data.Constants.TWW_ITEMS
+
+    -- 检查是否有 buff
+    if Catfish.API:UnitHasBuff("player", TWW_ITEMS.amaniWard.buffSpellID) then
+        return false
+    end
+
+    -- 检查背包是否有物品
+    if not Catfish.API:PlayerHasItem(TWW_ITEMS.amaniWard.itemID) then
+        return false
+    end
+
+    return true
+end
+
+-- 检查是否需要鱼饵
+function ItemManager:NeedsBait()
+    -- 首先检查是否在至暗之夜地图
+    if not Catfish.API:IsInTWWZone() then
+        return false
+    end
+
+    -- 检查是否选择了鱼饵
+    if not Catfish.db.tww or not Catfish.db.tww.selectedBait then
+        return false
+    end
+
+    local TWW_ITEMS = Catfish.Data.Constants.TWW_ITEMS
+    local baitKey = Catfish.db.tww.selectedBait .. "Bait"  -- fortune -> fortuneBait
+    local baitData = TWW_ITEMS[baitKey]
+
+    if not baitData then return false end
+
+    -- 检查是否有 buff
+    if Catfish.API:UnitHasBuff("player", baitData.buffSpellID) then
+        return false
+    end
+
+    -- 检查背包是否有物品
+    if not Catfish.API:PlayerHasItem(baitData.itemID) then
+        return false
+    end
+
+    return true
+end
+
+-- 构建阿曼尼结界宏
+function ItemManager:BuildAmaniWardMacro()
+    local TWW_ITEMS = Catfish.Data.Constants.TWW_ITEMS
+    local name = Catfish.API:GetItemName(TWW_ITEMS.amaniWard.itemID)
+    if name then
+        return "/use [nocombat] " .. name
+    end
+end
+
+-- 构建鱼饵宏
+function ItemManager:BuildBaitMacro()
+    if not Catfish.db.tww or not Catfish.db.tww.selectedBait then
+        return nil
+    end
+
+    local TWW_ITEMS = Catfish.Data.Constants.TWW_ITEMS
+    local baitKey = Catfish.db.tww.selectedBait .. "Bait"
+    local baitData = TWW_ITEMS[baitKey]
+
+    if not baitData then return nil end
+
+    local name = Catfish.API:GetItemName(baitData.itemID)
+    if name then
+        return "/use [nocombat] " .. name
+    end
 end
 
 
