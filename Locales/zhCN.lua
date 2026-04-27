@@ -184,6 +184,7 @@ L.QUALITY_EPIC = "史诗"
 L.QUALITY_LEGENDARY = "传说"
 L.QUALITY_ARTIFACT = "神器"
 L.QUALITY_HEIRLOOM = "传家宝"
+L.QUALITY_UNKNOWN = "未知"
 
 -- ============================================
 -- Errors
@@ -321,20 +322,6 @@ L.TREASURE_DETECTED = "★ 检测到藏宝箱！"
 -- ============================================
 
 L.EPIC_CATCH_FORMAT = "★ EPIC CATCH: %s%s at %s"
-
--- ============================================
--- Quality Names (for Statistics)
--- ============================================
-
-L.QUALITY_POOR = "Poor"
-L.QUALITY_COMMON = "Common"
-L.QUALITY_UNCOMMON = "Uncommon"
-L.QUALITY_RARE = "Rare"
-L.QUALITY_EPIC = "Epic"
-L.QUALITY_LEGENDARY = "Legendary"
-L.QUALITY_ARTIFACT = "Artifact"
-L.QUALITY_HEIRLOOM = "Heirloom"
-L.QUALITY_UNKNOWN = "Unknown"
 
 -- ============================================
 -- Misc

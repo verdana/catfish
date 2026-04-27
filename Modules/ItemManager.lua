@@ -18,9 +18,9 @@ end
 -- Helper Functions
 -- ============================================
 
--- 获取巨型鱼漂名称
 local GIGANTIC_BOBBER_NAME = nil
 
+-- 获取巨型鱼漂名称
 local function GetGiganticBobberName()
     if GIGANTIC_BOBBER_NAME then
         return GIGANTIC_BOBBER_NAME
@@ -37,10 +37,6 @@ end
 local function GetCustomBobberName()
     return Catfish.API:GetItemName(Catfish.db.selectedBobberToy)
 end
-
--- ============================================
--- GCD Item Checks (需要读条的物品)
--- ============================================
 
 -- 获取木筏名称
 local function GetRaftName()

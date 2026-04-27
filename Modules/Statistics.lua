@@ -7,20 +7,23 @@ local Statistics = {}
 Catfish.Modules.Statistics = Statistics
 
 -- Session statistics
-Statistics.sessionCatches = 0
+Statistics.sessionCatches   = 0
 Statistics.sessionStartTime = 0
-Statistics.lastCatchTime = 0
-Statistics.sessionCasts = 0  -- 抛竿次数
-Statistics.sessionItems = {} -- 会话物品统计
+Statistics.lastCatchTime    = 0
+Statistics.sessionCasts     = 0  -- 抛竿次数
+Statistics.sessionItems     = {} -- 会话物品统计
 
 -- Loot tracking
-Statistics.pendingLoot = {}
-Statistics.currentLootItems = {}
+Statistics.pendingLoot      = {} -- 待拾取物品
+Statistics.currentLootItems = {} -- 当前拾取物品
 
 -- Flag to track if current loot is from fishing
 -- Set when entering WAITING state, cleared after loot is processed or timeout
 Statistics.isFishingLoot = false
-Statistics.fishingLootTimeout = nil
+Statistics.fishingLootTimeout = nil -- 拾取超时时间
+
+-- Quality name cache (populated on first use)
+local QUALITY_NAMES
 
 -- ============================================
 -- Catch Recording
@@ -353,17 +356,19 @@ end
 -- ============================================
 
 function Statistics:GetQualityName(quality)
-    local names = {
-        [0] = "Poor",
-        [1] = "Common",
-        [2] = "Uncommon",
-        [3] = "Rare",
-        [4] = "Epic",
-        [5] = "Legendary",
-        [6] = "Artifact",
-        [7] = "Heirloom",
-    }
-    return names[quality] or "Unknown"
+    if not QUALITY_NAMES then
+        QUALITY_NAMES = {
+            [0] = Catfish.L.QUALITY_POOR,
+            [1] = Catfish.L.QUALITY_COMMON,
+            [2] = Catfish.L.QUALITY_UNCOMMON,
+            [3] = Catfish.L.QUALITY_RARE,
+            [4] = Catfish.L.QUALITY_EPIC,
+            [5] = Catfish.L.QUALITY_LEGENDARY,
+            [6] = Catfish.L.QUALITY_ARTIFACT,
+            [7] = Catfish.L.QUALITY_HEIRLOOM,
+        }
+    end
+    return QUALITY_NAMES[quality] or Catfish.L.QUALITY_UNKNOWN
 end
 
 -- ============================================

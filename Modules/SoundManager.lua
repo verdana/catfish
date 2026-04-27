@@ -25,11 +25,11 @@ local FISHING_SOUND_SETTINGS = {
 -- ============================================
 
 local CVAR = {
-    BACKGROUND_SOUND = "Sound_EnableSoundWhenGameIsInBG",
-    MUSIC_ENABLED = "Sound_EnableMusic",
-    MUSIC_VOLUME = "Sound_MusicVolume",
-    SFX_VOLUME = "Sound_SFXVolume",
-    MASTER_VOLUME = "Sound_MasterVolume",
+    BACKGROUND_SOUND = "Sound_EnableSoundWhenGameIsInBG",   -- 开启后台声音
+    MUSIC_ENABLED    = "Sound_EnableMusic",                 -- 关闭音乐
+    MUSIC_VOLUME     = "Sound_MusicVolume",                 -- 音乐音量
+    SFX_VOLUME       = "Sound_SFXVolume",                   -- 音效音量
+    MASTER_VOLUME    = "Sound_MasterVolume",                -- 主音量
 }
 
 -- ============================================
@@ -72,8 +72,14 @@ function SoundManager:SaveCurrentSettings()
         masterVolume = tonumber(GetCVarSafe(CVAR.MASTER_VOLUME)) or 1.0,
     }
 
-    Catfish:Debug("SoundManager: Saved settings:", self.savedSettings.backgroundSound,
-        self.savedSettings.musicEnabled, self.savedSettings.sfxVolume)
+    Catfish:Debug(
+        "SoundManager: Saved settings:",
+        self.savedSettings.backgroundSound,
+        self.savedSettings.musicEnabled,
+        self.savedSettings.musicVolume,
+        self.savedSettings.sfxVolume,
+        self.savedSettings.masterVolume
+    )
 
     return self.savedSettings
 end
@@ -140,7 +146,7 @@ function SoundManager:OnSleep()
 end
 
 -- ============================================
--- 启用/禁用管理
+-- 设置启用状态
 -- ============================================
 
 function SoundManager:SetEnabled(enabled)
@@ -153,6 +159,10 @@ function SoundManager:SetEnabled(enabled)
 
     Catfish:Debug("SoundManager: Enabled =", enabled)
 end
+
+-- ============================================
+-- 检查是否启用
+-- ============================================
 
 function SoundManager:IsEnabled()
     return self.enabled

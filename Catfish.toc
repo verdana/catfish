@@ -1,6 +1,6 @@
-## Interface: 120001
+## Interface: 120000, 120001, 120005
 ## Title: Catfish
-## Title-zhCN: 鲶鱼钓鱼助手
+## Title-zhCN: Catfish
 ## Notes: Feature-rich fishing assistant with auto-equip, toys and statistics
 ## Notes-zhCN: 功能丰富的钓鱼助手，支持自动装备、玩具管理和统计记录
 ## Version: 1.0.0
