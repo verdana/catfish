@@ -31,7 +31,7 @@ function StatsWindow:Init()
     -- Set title
     self.frame.title = self.frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     self.frame.title:SetPoint("TOP", self.frame, "TOP", 0, -5)
-    self.frame.title:SetText("Catfish Statistics")
+    self.frame.title:SetText(Catfish.L.STATS_WINDOW_TITLE)
 
     -- Create view tabs
     self:CreateViewTabs()
@@ -52,7 +52,9 @@ end
 -- ============================================
 
 function StatsWindow:CreateViewTabs()
-    local views = {"Overview", "Items", "Zones", "Rares"}
+    local L = Catfish.L
+    local views = {L.STATS_TAB_OVERVIEW, L.STATS_TAB_ITEMS, L.STATS_TAB_ZONES, L.STATS_TAB_RARES}
+    local viewKeys = {"overview", "items", "zones", "rares"}
 
     for i, view in ipairs(views) do
         local tab = CreateFrame("Button", nil, self.frame)
@@ -65,10 +67,10 @@ function StatsWindow:CreateViewTabs()
         tab:GetNormalTexture():SetColorTexture(0.2, 0.2, 0.2, 0.5)
 
         tab:SetScript("OnClick", function()
-            self:SelectView(view:lower())
+            self:SelectView(viewKeys[i])
         end)
 
-        self["tab" .. view] = tab
+        self["tab" .. viewKeys[i]] = tab
     end
 end
 
@@ -99,28 +101,29 @@ end
 
 function StatsWindow:ShowOverview()
     local stats = Catfish.db.stats
+    local L = Catfish.L
     local yOffset = -10
 
     -- Total catches
     local totalCatches = self.content:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     totalCatches:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, yOffset)
-    totalCatches:SetText("Total Catches: " .. (stats.total.catches or 0))
+    totalCatches:SetText(string.format(L.STATS_TOTAL_CATCHES, stats.total.catches or 0))
     yOffset = yOffset - 30
 
     -- Total time
     local totalTime = self.content:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     totalTime:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, yOffset)
-    totalTime:SetText("Total Fishing Time: " .. self:FormatTime(stats.total.time or 0))
+    totalTime:SetText(string.format(L.STATS_TOTAL_TIME_LABEL, self:FormatTime(stats.total.time or 0)))
     yOffset = yOffset - 25
 
     -- Catches per hour
-    local totalCatches = stats.total.catches or 0
+    local totalCatchesVal = stats.total.catches or 0
     local totalSeconds = stats.total.time or 0
-    local cph = totalSeconds > 0 and (totalCatches / totalSeconds * 3600) or 0
+    local cph = totalSeconds > 0 and (totalCatchesVal / totalSeconds * 3600) or 0
 
     local cphText = self.content:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     cphText:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, yOffset)
-    cphText:SetText(string.format("Catches per Hour: %.1f", cph))
+    cphText:SetText(string.format(L.STATS_CPH_LABEL, cph))
     yOffset = yOffset - 40
 
     -- Session stats
@@ -130,17 +133,17 @@ function StatsWindow:ShowOverview()
 
         local sessionLabel = self.content:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
         sessionLabel:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, yOffset)
-        sessionLabel:SetText("Current Session")
+        sessionLabel:SetText(L.STATS_CURRENT_SESSION_LABEL)
         yOffset = yOffset - 25
 
         local sessionCatchesText = self.content:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         sessionCatchesText:SetPoint("TOPLEFT", self.content, "TOPLEFT", 20, yOffset)
-        sessionCatchesText:SetText("Catches: " .. sessionCatches)
+        sessionCatchesText:SetText(string.format(L.STATS_SESSION_CATCHES, sessionCatches))
         yOffset = yOffset - 20
 
         local sessionTimeText = self.content:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         sessionTimeText:SetPoint("TOPLEFT", self.content, "TOPLEFT", 20, yOffset)
-        sessionTimeText:SetText("Time: " .. self:FormatTime(sessionTime))
+        sessionTimeText:SetText(string.format(L.STATS_SESSION_TIME_LABEL, self:FormatTime(sessionTime)))
         yOffset = yOffset - 40
     end
 
@@ -150,7 +153,7 @@ function StatsWindow:ShowOverview()
 
     local uniqueText = self.content:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     uniqueText:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, yOffset)
-    uniqueText:SetText("Unique Items Caught: " .. uniqueItems)
+    uniqueText:SetText(string.format(L.STATS_UNIQUE_LABEL, uniqueItems))
 end
 
 -- ============================================
@@ -223,7 +226,7 @@ function StatsWindow:ShowZones()
     for i, zone in ipairs(zones) do
         local zoneText = scrollContent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         zoneText:SetPoint("TOPLEFT", scrollContent, "TOPLEFT", 5, yOffset)
-        zoneText:SetText(i .. ". " .. zone.name .. " - " .. zone.catches .. " catches")
+        zoneText:SetText(i .. ". " .. zone.name .. " - " .. string.format(Catfish.L.STATS_CATCHES_FORMAT, zone.catches))
         yOffset = yOffset - 20
     end
 end
@@ -264,7 +267,7 @@ function StatsWindow:ShowRares()
     if #rares == 0 then
         local noRares = scrollContent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         noRares:SetPoint("TOPLEFT", scrollContent, "TOPLEFT", 5, -5)
-        noRares:SetText("No rare catches recorded yet!")
+        noRares:SetText(Catfish.L.STATS_NO_RARES)
     else
         local yOffset = -5
         for i, rare in ipairs(rares) do

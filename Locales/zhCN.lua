@@ -196,4 +196,151 @@ L.ERROR_ALREADY_EQUIPPED = "已装备: %s"
 L.ERROR_ITEM_NOT_FOUND = "找不到物品: %s"
 L.ERROR_TOY_NOT_OWNED = "你没有这个玩具"
 
+-- ============================================
+-- Minimap Button
+-- ============================================
+
+L.MINIMAP_TITLE = "Catfish - 钓鱼助手"
+L.MINIMAP_STATUS = "状态:"
+L.MINIMAP_STATUS_ACTIVE = "|cFF00FF00激活|r"
+L.MINIMAP_STATUS_SLEEP = "|cFF808080休眠|r"
+L.MINIMAP_FISHING_MODE = "钓鱼模式:"
+L.MINIMAP_MODE_DISABLED = "未启用"
+L.MINIMAP_MODE_ONEKEY = "一键模式 (%s)"
+L.MINIMAP_MODE_DOUBLECLICK = "双击模式 (右键双击)"
+L.MINIMAP_SESSION_CATCHES = "本次钓获:"
+L.MINIMAP_SESSION_TIME = "钓鱼时间:"
+L.MINIMAP_TIP_LEFT_CLICK = "|cFFFFFF00左键|r 打开设置"
+L.MINIMAP_TIP_CTRL_LEFT = "|cFFFFFF00Ctrl+左键|r 统计HUD"
+L.MINIMAP_TIP_RIGHT_CLICK = "|cFFFFFF00右键|r 切换激活/休眠"
+L.MINIMAP_ACTIVATED = "已激活"
+L.MINIMAP_SLEEP = "已休眠"
+
+-- ============================================
+-- Options Panel
+-- ============================================
+
+L.OPT_FISHING_MODE = "钓鱼模式"
+L.OPT_ONEKEY_DESC = "按下一个键完成钓鱼动作"
+L.OPT_KEYBIND_LABEL = "快捷键绑定"
+L.OPT_KEYBIND_DESC = "点击设置一键钓鱼的快捷键"
+L.OPT_DOUBLECLICK_DESC = "快速双击鼠标右键开始钓鱼"
+L.OPT_TOYS_SECTION = "玩具设置"
+L.OPT_RAFT_DESC = "选择游泳时要使用的钓鱼筏（选择'无'表示不使用钓鱼筏）"
+L.OPT_GIGANTIC_BOBBER_DESC = "每次抛竿前自动使用\"可重复使用的巨型鱼漂\"玩具，放大鱼漂便于观察"
+L.OPT_BOBBER_DESC = "选择要使用的浮标玩具（选择'无'表示不使用自定义浮标）"
+L.OPT_STATS_SECTION = "统计设置"
+L.OPT_SHOW_HUD_DESC = "在屏幕上显示钓鱼统计数据（持续时间、抛竿次数、鱼获等）"
+L.OPT_ONLY_FISH_DESC = "开启后只统计鱼类物品，排除垃圾、装备、图纸等其他物品"
+L.OPT_OTHER_SECTION = "其它设置"
+L.OPT_SOUND_DESC = "激活时自动开启后台声音、关闭音乐、最大化音效音量，休眠时恢复原始设置"
+L.OPT_AUTOLOOT_DESC = "每次抛竿时自动检查并开启自动拾取功能"
+L.OPT_HIDE_MINIMAP_DESC = "隐藏小地图上的插件按钮"
+L.OPT_DEBUG_DESC = "在聊天框输出详细的调试信息，用于排查问题"
+L.OPT_TWW_SECTION = "至暗之夜"
+L.OPT_TREASURE_SOUND_DESC = "钓鱼时出现藏宝箱时播放提示音（至暗之夜版本功能）"
+L.OPT_AMANI_WARD_DESC = "抛竿前自动使用阿曼尼垂钓者的结界（需要背包中有该物品，且身上没有对应Buff）"
+L.OPT_AUTO_BAIT_DESC = "抛竿前自动使用选中的鱼饵（需要背包中有该物品，且身上没有对应Buff）"
+L.OPT_HIDE_MINIMAP = "隐藏小地图按钮"
+L.OPT_DEBUG_MODE = "启用调试模式"
+L.OPT_TREASURE_SOUND = "宝箱出现提示音"
+L.OPT_AMANI_WARD = "阿曼尼垂钓者的结界"
+L.ENABLE_AUTOLOOT = "保持自动拾取"
+L.OPT_KEYBIND_HINT = "按下按键设置，ESC取消，右键清除绑定"
+L.OPT_NONE = "无"
+L.OPT_SELECT_RAFT = "选择钓鱼筏"
+L.OPT_SELECT_BOBBER = "选择浮标"
+L.OPT_AUTO_BAIT = "自动上饵"
+
+-- ============================================
+-- Bait Names
+-- ============================================
+
+L.BAIT_FORTUNE = "好运神灵鱼诱饵"
+L.BAIT_OCTOPUS = "不祥章鱼诱饵"
+L.BAIT_BLOODHUNTER = "鲜血猎手诱饵"
+
+-- ============================================
+-- Stats HUD
+-- ============================================
+
+L.HUD_TITLE = "|cFF00FF00Catfish 钓鱼统计|r"
+L.HUD_NO_LOOT = "暂无收获"
+L.HUD_DURATION = "耗时:"
+L.HUD_CASTS = "抛竿:"
+L.HUD_HARVEST = "收获:"
+
+-- ============================================
+-- Stats Window
+-- ============================================
+
+L.STATS_WINDOW_TITLE = "Catfish Statistics"
+L.STATS_TAB_OVERVIEW = "Overview"
+L.STATS_TAB_ITEMS = "Items"
+L.STATS_TAB_ZONES = "Zones"
+L.STATS_TAB_RARES = "Rares"
+L.STATS_TOTAL_CATCHES = "Total Catches: %d"
+L.STATS_TOTAL_TIME_LABEL = "Total Fishing Time: %s"
+L.STATS_CPH_LABEL = "Catches per Hour: %.1f"
+L.STATS_CURRENT_SESSION_LABEL = "Current Session"
+L.STATS_SESSION_CATCHES = "Catches: %d"
+L.STATS_SESSION_TIME_LABEL = "Time: %s"
+L.STATS_UNIQUE_LABEL = "Unique Items Caught: %d"
+L.STATS_NO_RARES = "No rare catches recorded yet!"
+L.STATS_CATCHES_FORMAT = "%d catches"
+
+-- ============================================
+-- Toy Status
+-- ============================================
+
+L.TOY_STATUS_HEADER = "=== Toy Status ==="
+L.TOY_RAFTS_OWNED = "Rafts owned: %d"
+L.TOY_BOBBERS_OWNED = "Bobbers owned: %d"
+L.TOY_EXTRA_OWNED = "Extra toys: %d"
+L.TOY_READY = "ready"
+L.TOY_ON_COOLDOWN = "on cooldown: %ds"
+L.TOY_RAFT_MODE = "Raft mode: %s"
+L.TOY_BOBBER_MODE = "Bobber mode: %s"
+
+-- ============================================
+-- OneKey Messages
+-- ============================================
+
+L.ONEKEY_SET_IN_COMBAT = "战斗中无法设置快捷键"
+L.ONEKEY_CLEARED = "快捷键已清除"
+L.ONEKEY_SET_TO = "快捷键已设置为: %s"
+
+-- ============================================
+-- Treasure Chest
+-- ============================================
+
+L.TREASURE_DETECTED = "★ 检测到藏宝箱！"
+
+-- ============================================
+-- Epic Catch
+-- ============================================
+
+L.EPIC_CATCH_FORMAT = "★ EPIC CATCH: %s%s at %s"
+
+-- ============================================
+-- Quality Names (for Statistics)
+-- ============================================
+
+L.QUALITY_POOR = "Poor"
+L.QUALITY_COMMON = "Common"
+L.QUALITY_UNCOMMON = "Uncommon"
+L.QUALITY_RARE = "Rare"
+L.QUALITY_EPIC = "Epic"
+L.QUALITY_LEGENDARY = "Legendary"
+L.QUALITY_ARTIFACT = "Artifact"
+L.QUALITY_HEIRLOOM = "Heirloom"
+L.QUALITY_UNKNOWN = "Unknown"
+
+-- ============================================
+-- Misc
+-- ============================================
+
+L.NOT_BOUND = NOT_BOUND or "Not Bound"
+L.LIBEQOL_NOT_FOUND = "LibEQOL not found, using fallback settings"
+
 return L

@@ -260,31 +260,32 @@ end
 -- ============================================
 
 function Toys:PrintStatus()
-    Catfish:Print("=== Toy Status ===")
+    local L = Catfish.L
+    Catfish:Print(L.TOY_STATUS_HEADER)
 
-    Catfish:Print("Rafts owned:", #self.ownedRafts)
+    Catfish:Print(string.format(L.TOY_RAFTS_OWNED, #self.ownedRafts))
     for _, toy in ipairs(self.ownedRafts) do
         local cooldown = Catfish.API:GetToyCooldown(toy.toyID)
-        local status = cooldown > 0 and ("on cooldown: " .. cooldown .. "s") or "ready"
+        local status = cooldown > 0 and string.format(L.TOY_ON_COOLDOWN, cooldown) or L.TOY_READY
         Catfish:Print("  -", toy.name, "(" .. status .. ")")
     end
 
-    Catfish:Print("Bobbers owned:", #self.ownedBobbers)
+    Catfish:Print(string.format(L.TOY_BOBBERS_OWNED, #self.ownedBobbers))
     for _, toy in ipairs(self.ownedBobbers) do
         local cooldown = Catfish.API:GetToyCooldown(toy.toyID)
-        local status = cooldown > 0 and ("on cooldown: " .. cooldown .. "s") or "ready"
+        local status = cooldown > 0 and string.format(L.TOY_ON_COOLDOWN, cooldown) or L.TOY_READY
         Catfish:Print("  -", toy.name, "(" .. status .. ")")
     end
 
-    Catfish:Print("Extra toys:", #self.ownedExtraToys)
+    Catfish:Print(string.format(L.TOY_EXTRA_OWNED, #self.ownedExtraToys))
     for _, toy in ipairs(self.ownedExtraToys) do
         local cooldown = Catfish.API:GetToyCooldown(toy.toyID)
-        local status = cooldown > 0 and ("on cooldown: " .. cooldown .. "s") or "ready"
+        local status = cooldown > 0 and string.format(L.TOY_ON_COOLDOWN, cooldown) or L.TOY_READY
         Catfish:Print("  -", toy.name, "(" .. status .. ")")
     end
 
-    Catfish:Print("Raft mode:", Catfish.db.toys.raftMode)
-    Catfish:Print("Bobber mode:", Catfish.db.toys.bobberMode)
+    Catfish:Print(string.format(L.TOY_RAFT_MODE, Catfish.db.toys.raftMode))
+    Catfish:Print(string.format(L.TOY_BOBBER_MODE, Catfish.db.toys.bobberMode))
 end
 
 -- ============================================

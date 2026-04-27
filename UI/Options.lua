@@ -31,7 +31,7 @@ function Options:Init()
 
     -- Check if LibEQOL is available
     if not SettingsLib then
-        Catfish:Print("LibEQOL not found, using fallback settings")
+        Catfish:Print(Catfish.L.LIBEQOL_NOT_FOUND)
         self:InitFallback()
         return
     end
@@ -82,18 +82,19 @@ end
 
 function Options:BuildSettings(cat)
     local db = Catfish.db
+    local L = Catfish.L
 
     -- ============================================
     -- Fishing Mode Section
     -- ============================================
 
-    SettingsLib:CreateHeader(cat, "钓鱼模式")
+    SettingsLib:CreateHeader(cat, L.OPT_FISHING_MODE)
 
     -- One-Key Mode Checkbox
     SettingsLib:CreateCheckbox(cat, {
         key = "oneKeyEnabled",
-        name = "启用一键钓鱼",
-        desc = "按下一个键完成钓鱼动作",
+        name = L.ENABLE_ONEKEY,
+        desc = L.OPT_ONEKEY_DESC,
         default = db.oneKeyEnabled or false,
         get = function() return db.oneKeyEnabled or false end,
         set = function(value)
@@ -115,15 +116,15 @@ function Options:BuildSettings(cat)
 
     -- Keybind button text function
     local function GetKeybindText()
-        return CatfishCharDB.keybinding or NOT_BOUND
+        return CatfishCharDB.keybinding or L.NOT_BOUND
     end
 
     -- Store button initializer for text update
     local keybindButton = SettingsLib:CreateButton(cat, {
         key = "oneKeyKeybind",
-        label = "快捷键绑定",
+        label = L.OPT_KEYBIND_LABEL,
         text = GetKeybindText(),
-        desc = "点击设置一键钓鱼的快捷键",
+        desc = L.OPT_KEYBIND_DESC,
         click = function(buttonFrame)
             -- Suppress OnEditFocusLost for this click
             Options._suppressFocusLost = true
@@ -165,8 +166,8 @@ function Options:BuildSettings(cat)
     -- Double-Click Mode Checkbox
     SettingsLib:CreateCheckbox(cat, {
         key = "doubleClickEnabled",
-        name = "启用双击钓鱼",
-        desc = "快速双击鼠标右键开始钓鱼",
+        name = L.ENABLE_DOUBLECLICK,
+        desc = L.OPT_DOUBLECLICK_DESC,
         default = db.doubleClickEnabled or false,
         get = function() return db.doubleClickEnabled or false end,
         set = function(value)
@@ -190,13 +191,13 @@ function Options:BuildSettings(cat)
     -- Toys Section
     -- ============================================
 
-    SettingsLib:CreateHeader(cat, "玩具设置")
+    SettingsLib:CreateHeader(cat, L.OPT_TOYS_SECTION)
 
     -- Raft Dropdown
     SettingsLib:CreateDropdown(cat, {
         key = "selectedRaft",
-        name = "选择钓鱼筏",
-        desc = "选择游泳时要使用的钓鱼筏（选择'无'表示不使用钓鱼筏）",
+        name = L.OPT_SELECT_RAFT,
+        desc = L.OPT_RAFT_DESC,
         varType = Settings.VarType.String,
         default = db.toys.selectedRaft and tostring(db.toys.selectedRaft) or "",
         get = function() return db.toys.selectedRaft and tostring(db.toys.selectedRaft) or "" end,
@@ -210,7 +211,7 @@ function Options:BuildSettings(cat)
             end
         end,
         optionfunc = function()
-            local options = { [""] = "无" }
+            local options = { [""] = L.OPT_NONE }
             local ownedRafts = Catfish.Modules.Toys and Catfish.Modules.Toys:GetOwnedRafts() or {}
             for _, toy in ipairs(ownedRafts) do
                 options[tostring(toy.toyID)] = toy.name
@@ -222,8 +223,8 @@ function Options:BuildSettings(cat)
     -- Use Gigantic Bobber
     SettingsLib:CreateCheckbox(cat, {
         key = "useGiganticBobber",
-        name = "使用巨型鱼漂",
-        desc = "每次抛竿前自动使用\"可重复使用的巨型鱼漂\"玩具，放大鱼漂便于观察",
+        name = L.USE_GIGANTIC_BOBBER,
+        desc = L.OPT_GIGANTIC_BOBBER_DESC,
         default = db.useGiganticBobber or false,
         get = function() return db.useGiganticBobber or false end,
         set = function(value) db.useGiganticBobber = value end,
@@ -232,8 +233,8 @@ function Options:BuildSettings(cat)
     -- Bobber Toy Dropdown
     SettingsLib:CreateDropdown(cat, {
         key = "selectedBobberToy",
-        name = "选择浮标",
-        desc = "选择要使用的浮标玩具（选择'无'表示不使用自定义浮标）",
+        name = L.OPT_SELECT_BOBBER,
+        desc = L.OPT_BOBBER_DESC,
         varType = Settings.VarType.String,
         default = db.selectedBobberToy and tostring(db.selectedBobberToy) or "",
         get = function() return db.selectedBobberToy and tostring(db.selectedBobberToy) or "" end,
@@ -245,7 +246,7 @@ function Options:BuildSettings(cat)
             end
         end,
         optionfunc = function()
-            local options = { [""] = "无" }
+            local options = { [""] = L.OPT_NONE }
             local ownedBobbers = Catfish.Modules.Toys and Catfish.Modules.Toys:GetOwnedBobbers() or {}
             -- Filter out the Gigantic Bobber (toyID 202207) - it's controlled by its own checkbox
             local GIGANTIC_BOBBER_TOY_ID = 202207
@@ -262,13 +263,13 @@ function Options:BuildSettings(cat)
     -- Statistics Section
     -- ============================================
 
-    SettingsLib:CreateHeader(cat, "统计设置")
+    SettingsLib:CreateHeader(cat, L.OPT_STATS_SECTION)
 
     -- Show Stats HUD
     local showStatsHUDElement = SettingsLib:CreateCheckbox(cat, {
         key = "showStatsHUD",
-        name = "显示统计 HUD",
-        desc = "在屏幕上显示钓鱼统计数据（持续时间、抛竿次数、鱼获等）",
+        name = L.SHOW_STATS_HUD,
+        desc = L.OPT_SHOW_HUD_DESC,
         default = true,
         get = function() return db.showStatsHUD == true end,
         set = function(value)
@@ -282,8 +283,8 @@ function Options:BuildSettings(cat)
     -- Only Count Fish (depends on showStatsHUD)
     SettingsLib:CreateCheckbox(cat, {
         key = "statsOnlyFish",
-        name = "只统计鱼类",
-        desc = "开启后只统计鱼类物品，排除垃圾、装备、图纸等其他物品",
+        name = L.STATS_ONLY_FISH,
+        desc = L.OPT_ONLY_FISH_DESC,
         default = true,
         get = function() return db.statsOnlyFish == true end,
         set = function(value)
@@ -297,13 +298,13 @@ function Options:BuildSettings(cat)
     -- Other Settings Section
     -- ============================================
 
-    SettingsLib:CreateHeader(cat, "其它设置")
+    SettingsLib:CreateHeader(cat, L.OPT_OTHER_SECTION)
 
     -- Sound Management
     SettingsLib:CreateCheckbox(cat, {
         key = "soundManagement",
-        name = "钓鱼时自动管理声音",
-        desc = "激活时自动开启后台声音、关闭音乐、最大化音效音量，休眠时恢复原始设置",
+        name = L.ENABLE_SOUND_MANAGEMENT,
+        desc = L.OPT_SOUND_DESC,
         default = db.soundManagement or false,
         get = function() return db.soundManagement or false end,
         set = function(value)
@@ -317,8 +318,8 @@ function Options:BuildSettings(cat)
     -- Keep Auto Loot
     SettingsLib:CreateCheckbox(cat, {
         key = "keepAutoLoot",
-        name = "保持自动拾取",
-        desc = "每次抛竿时自动检查并开启自动拾取功能",
+        name = L.ENABLE_AUTOLOOT or "保持自动拾取",
+        desc = L.OPT_AUTOLOOT_DESC,
         default = db.keepAutoLoot or false,
         get = function() return db.keepAutoLoot or false end,
         set = function(value) db.keepAutoLoot = value end,
@@ -327,8 +328,8 @@ function Options:BuildSettings(cat)
     -- Hide Minimap Button
     SettingsLib:CreateCheckbox(cat, {
         key = "hideMinimap",
-        name = "隐藏小地图按钮",
-        desc = "隐藏小地图上的插件按钮",
+        name = L.OPT_HIDE_MINIMAP or "隐藏小地图按钮",
+        desc = L.OPT_HIDE_MINIMAP_DESC,
         default = Catfish.charDB.minimap.hide or false,
         get = function() return Catfish.charDB.minimap.hide or false end,
         set = function(value)
@@ -346,8 +347,8 @@ function Options:BuildSettings(cat)
     -- Debug Mode
     SettingsLib:CreateCheckbox(cat, {
         key = "debugMode",
-        name = "启用调试模式",
-        desc = "在聊天框输出详细的调试信息，用于排查问题",
+        name = L.OPT_DEBUG_MODE or "启用调试模式",
+        desc = L.OPT_DEBUG_DESC,
         default = db.debugMode or false,
         get = function() return db.debugMode or false end,
         set = function(value) db.debugMode = value end,
@@ -357,13 +358,13 @@ function Options:BuildSettings(cat)
     -- The War Within Section (至暗之夜)
     -- ============================================
 
-    SettingsLib:CreateHeader(cat, "至暗之夜")
+    SettingsLib:CreateHeader(cat, L.OPT_TWW_SECTION)
 
     -- Treasure Chest Sound (The War Within feature)
     SettingsLib:CreateCheckbox(cat, {
         key = "treasureChestSound",
-        name = "宝箱出现提示音",
-        desc = "钓鱼时出现藏宝箱时播放提示音（至暗之夜版本功能）",
+        name = L.OPT_TREASURE_SOUND or "宝箱出现提示音",
+        desc = L.OPT_TREASURE_SOUND_DESC,
         default = db.treasureChestSound ~= false,
         get = function() return db.treasureChestSound ~= false end,
         set = function(value) db.treasureChestSound = value end,
@@ -372,8 +373,8 @@ function Options:BuildSettings(cat)
     -- Amani Fisher's Ward
     SettingsLib:CreateCheckbox(cat, {
         key = "useAmaniWard",
-        name = "阿曼尼垂钓者的结界",
-        desc = "抛竿前自动使用阿曼尼垂钓者的结界（需要背包中有该物品，且身上没有对应Buff）",
+        name = L.OPT_AMANI_WARD or "阿曼尼垂钓者的结界",
+        desc = L.OPT_AMANI_WARD_DESC,
         default = db.tww and db.tww.useAmaniWard or false,
         get = function() return db.tww and db.tww.useAmaniWard or false end,
         set = function(value)
@@ -385,8 +386,8 @@ function Options:BuildSettings(cat)
     -- Auto Bait Dropdown
     SettingsLib:CreateDropdown(cat, {
         key = "selectedBait",
-        name = "自动上饵",
-        desc = "抛竿前自动使用选中的鱼饵（需要背包中有该物品，且身上没有对应Buff）",
+        name = L.OPT_AUTO_BAIT,
+        desc = L.OPT_AUTO_BAIT_DESC,
         varType = Settings.VarType.String,
         default = db.tww and db.tww.selectedBait or "",
         get = function() return db.tww and db.tww.selectedBait or "" end,
@@ -404,10 +405,10 @@ function Options:BuildSettings(cat)
         end,
         optionfunc = function()
             return {
-                [""] = "无",
-                ["fortune"] = "好运神灵鱼诱饵",
-                ["octopus"] = "不祥章鱼诱饵",
-                ["bloodhunter"] = "鲜血猎手诱饵",
+                [""] = L.OPT_NONE,
+                ["fortune"] = L.BAIT_FORTUNE,
+                ["octopus"] = L.BAIT_OCTOPUS,
+                ["bloodhunter"] = L.BAIT_BLOODHUNTER,
             }
         end,
     })
@@ -496,7 +497,7 @@ function Options:CreateKeybindCapture()
     -- Single instruction line
     local hint = hintBox:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     hint:SetPoint("CENTER", hintBox, "CENTER", 0, 0)
-    hint:SetText("按下按键设置，ESC取消，右键清除绑定")
+    hint:SetText(Catfish.L.OPT_KEYBIND_HINT)
 
     frame.hintBox = hintBox
 

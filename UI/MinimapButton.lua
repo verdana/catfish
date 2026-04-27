@@ -167,40 +167,41 @@ end
 -- ============================================
 
 function MinimapButton:OnEnter()
+    local L = Catfish.L
     GameTooltip:SetOwner(self.button, "ANCHOR_LEFT")
-    GameTooltip:AddLine("Catfish - 钓鱼助手")
+    GameTooltip:AddLine(L.MINIMAP_TITLE)
     GameTooltip:AddLine(" ")
 
     -- Mode status (Active/Sleep)
     if Catfish.db.sleepMode then
-        GameTooltip:AddDoubleLine("状态:", "|cFF808080休眠|r", 1, 1, 1)
+        GameTooltip:AddDoubleLine(L.MINIMAP_STATUS, L.MINIMAP_STATUS_SLEEP, 1, 1, 1)
     else
-        GameTooltip:AddDoubleLine("状态:", "|cFF00FF00激活|r", 1, 1, 1)
+        GameTooltip:AddDoubleLine(L.MINIMAP_STATUS, L.MINIMAP_STATUS_ACTIVE, 1, 1, 1)
     end
     GameTooltip:AddLine(" ")
 
     -- Current mode
-    local mode = "未启用"
+    local mode = L.MINIMAP_MODE_DISABLED
     if Catfish.db.oneKeyEnabled then
-        local key = Catfish.Modules.OneKey:GetKeybind() or "未设置"
-        mode = "一键模式 (" .. key .. ")"
+        local key = Catfish.Modules.OneKey:GetKeybind() or L.NOT_BOUND
+        mode = string.format(L.MINIMAP_MODE_ONEKEY, key)
     elseif Catfish.db.doubleClickEnabled then
-        mode = "双击模式 (右键双击)"
+        mode = L.MINIMAP_MODE_DOUBLECLICK
     end
-    GameTooltip:AddDoubleLine("钓鱼模式:", mode, 1, 1, 1)
+    GameTooltip:AddDoubleLine(L.MINIMAP_FISHING_MODE, mode, 1, 1, 1)
 
     -- Session stats
     if Catfish.Modules.Statistics then
         local catches = Catfish.Modules.Statistics:GetSessionCatches()
         local time = Catfish.Modules.Statistics:GetSessionTime()
-        GameTooltip:AddDoubleLine("本次钓获:", catches, 1, 1, 1)
-        GameTooltip:AddDoubleLine("钓鱼时间:", Catfish.Modules.Statistics:FormatTime(time), 1, 1, 1)
+        GameTooltip:AddDoubleLine(L.MINIMAP_SESSION_CATCHES, catches, 1, 1, 1)
+        GameTooltip:AddDoubleLine(L.MINIMAP_SESSION_TIME, Catfish.Modules.Statistics:FormatTime(time), 1, 1, 1)
     end
 
     GameTooltip:AddLine(" ")
-    GameTooltip:AddLine("|cFFFFFF00左键|r 打开设置", 0.7, 0.7, 0.7)
-    GameTooltip:AddLine("|cFFFFFF00Ctrl+左键|r 统计HUD", 0.7, 0.7, 0.7)
-    GameTooltip:AddLine("|cFFFFFF00右键|r 切换激活/休眠", 0.7, 0.7, 0.7)
+    GameTooltip:AddLine(L.MINIMAP_TIP_LEFT_CLICK, 0.7, 0.7, 0.7)
+    GameTooltip:AddLine(L.MINIMAP_TIP_CTRL_LEFT, 0.7, 0.7, 0.7)
+    GameTooltip:AddLine(L.MINIMAP_TIP_RIGHT_CLICK, 0.7, 0.7, 0.7)
 
     GameTooltip:Show()
 end
@@ -265,7 +266,7 @@ function MinimapButton:SetActiveMode()
     if Catfish.db.showStatsHUD and Catfish.UI.StatsHUD then
         Catfish.UI.StatsHUD:Show()
     end
-    Catfish:Print("已激活")
+    Catfish:Print(Catfish.L.MINIMAP_ACTIVATED)
 end
 
 function MinimapButton:SetSleepMode()
@@ -286,7 +287,7 @@ function MinimapButton:SetSleepMode()
     if Catfish.db.showStatsHUD and Catfish.UI.StatsHUD then
         Catfish.UI.StatsHUD:Hide()
     end
-    Catfish:Print("已休眠")
+    Catfish:Print(Catfish.L.MINIMAP_SLEEP)
 end
 
 function MinimapButton:ToggleMode()

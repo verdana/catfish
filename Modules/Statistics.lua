@@ -202,7 +202,7 @@ function Statistics:AnnounceRareCatch(itemID, quantity)
     -- Announce once with quantity info
     local quantityText = quantity > 1 and (" x" .. quantity) or ""
     if quality >= 4 then
-        Catfish:Print("★ EPIC CATCH:", itemName, quantityText, "at", subZone)
+        Catfish:Print(string.format(Catfish.L.EPIC_CATCH_FORMAT, itemName, quantityText, subZone))
         PlaySound(8959) -- RAID_WARNING
     end
 end
@@ -376,7 +376,7 @@ function Statistics:OnTreasureChestSpawned()
         return
     end
 
-    Catfish:Print("★ 检测到藏宝箱！")
+    Catfish:Print(Catfish.L.TREASURE_DETECTED)
     PlaySound(8960) -- IG_QUEST_COMPLETE
 end
 

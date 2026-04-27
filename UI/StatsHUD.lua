@@ -81,7 +81,7 @@ function StatsHUD:CreateFrame()
     -- Title (left-aligned, same padding as content lines)
     local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     title:SetPoint("TOP", frame, "TOP", 12, -16)
-    title:SetText("|cFF00FF00Catfish 钓鱼统计|r")
+    title:SetText(Catfish.L.HUD_TITLE)
     frame.title = title
 
     -- Content area (scrolling not needed, just stack text)
@@ -163,7 +163,7 @@ function StatsHUD:Update()
         -- No catches: show centered message
         lines[lineIndex] = ""  -- blank line
         lineIndex = lineIndex + 1
-        lines[lineIndex] = GRAY_COLOR .. "暂无收获" .. END_COLOR
+        lines[lineIndex] = GRAY_COLOR .. Catfish.L.HUD_NO_LOOT .. END_COLOR
         centerLineIndex = lineIndex
         lineIndex = lineIndex + 1
     else
@@ -186,13 +186,14 @@ function StatsHUD:Update()
     lines[lineIndex] = ""
     lineIndex = lineIndex + 1
 
-    -- Summary line at bottom: 耗时：xxxm   抛竿：xx  收获：xx
+    -- Summary line at bottom: Duration / Casts / Harvest
     -- Gold labels, white values
-    local summaryLine = GOLD_COLOR .. "耗时: " .. END_COLOR .. WHITE_COLOR .. stats:FormatTime(sessionTime) .. END_COLOR
+    local L = Catfish.L
+    local summaryLine = GOLD_COLOR .. L.HUD_DURATION .. " " .. END_COLOR .. WHITE_COLOR .. stats:FormatTime(sessionTime) .. END_COLOR
         .. GRAY_COLOR .. "   " .. END_COLOR
-        .. GOLD_COLOR .. "抛竿: " .. END_COLOR .. WHITE_COLOR .. tostring(castCount) .. END_COLOR
+        .. GOLD_COLOR .. L.HUD_CASTS .. " " .. END_COLOR .. WHITE_COLOR .. tostring(castCount) .. END_COLOR
         .. GRAY_COLOR .. "   " .. END_COLOR
-        .. GOLD_COLOR .. "收获: " .. END_COLOR .. WHITE_COLOR .. tostring(totalCatches) .. END_COLOR
+        .. GOLD_COLOR .. L.HUD_HARVEST .. " " .. END_COLOR .. WHITE_COLOR .. tostring(totalCatches) .. END_COLOR
     lines[lineIndex] = summaryLine
     lineIndex = lineIndex + 1
 

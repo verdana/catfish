@@ -257,8 +257,9 @@ function OneKey:UpdateBinding(id)
 end
 
 function OneKey:SetKeybind(keyOrButton)
+    local L = Catfish.L
     if InCombatLockdown() then
-        Catfish:Print("战斗中无法设置快捷键")
+        Catfish:Print(L.ONEKEY_SET_IN_COMBAT)
         return false
     end
 
@@ -271,7 +272,7 @@ function OneKey:SetKeybind(keyOrButton)
     if not keyOrButton or keyOrButton == "" then
         self.keybind = nil
         CatfishCharDB.keybinding = nil
-        Catfish:Print("快捷键已清除")
+        Catfish:Print(L.ONEKEY_CLEARED)
         return true
     end
 
@@ -285,7 +286,7 @@ function OneKey:SetKeybind(keyOrButton)
     CatfishCharDB.keybinding = keyOrButton
     self:UpdateBinding(BIND_REASON.KEYBIND_SET)
 
-    Catfish:Print("快捷键已设置为: " .. keyOrButton)
+    Catfish:Print(string.format(L.ONEKEY_SET_TO, keyOrButton))
     return true
 end
 

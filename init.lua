@@ -14,6 +14,40 @@ Catfish.UI = {}
 Catfish.Data = {}
 Catfish.Locales = {}
 
+-- ============================================
+-- Localization System
+-- ============================================
+
+-- Load locale based on client language
+local function LoadLocale()
+    local locale = GetLocale()
+    local L
+
+    -- Try to load the specific locale
+    if locale == "zhCN" and Catfish.Locales.zhCN then
+        L = Catfish.Locales.zhCN
+    elseif locale == "zhTW" and Catfish.Locales.zhTW then
+        L = Catfish.Locales.zhTW
+    elseif locale == "enUS" and Catfish.Locales.enUS then
+        L = Catfish.Locales.enUS
+    else
+        -- Fallback order: enUS -> zhCN -> zhTW
+        if Catfish.Locales.enUS then
+            L = Catfish.Locales.enUS
+        elseif Catfish.Locales.zhCN then
+            L = Catfish.Locales.zhCN
+        elseif Catfish.Locales.zhTW then
+            L = Catfish.Locales.zhTW
+        else
+            -- Empty fallback
+            L = {}
+        end
+    end
+
+    Catfish.L = L
+    return L
+end
+
 -- Default database structure
 local DEFAULT_DB = {
     enabled = true,
@@ -135,6 +169,7 @@ SLASH_CATFISH2 = "/cf"
 
 SlashCmdList["CATFISH"] = function(msg)
     msg = msg:lower():trim()
+    local L = Catfish.L
 
     if msg == "" or msg == "config" or msg == "options" then
         if Catfish.UI.Options then
@@ -152,10 +187,10 @@ SlashCmdList["CATFISH"] = function(msg)
         CatfishDB = nil
         CatfishCharDB = nil
         InitDB()
-        Catfish:Print("Database reset.")
+        Catfish:Print(L.MSG_DATABASE_RESET)
     elseif msg == "debug" then
         Catfish.db.debugMode = not Catfish.db.debugMode
-        Catfish:Print("Debug mode:", Catfish.db.debugMode and "ON" or "OFF")
+        Catfish:Print(string.format(L.MSG_DEBUG_MODE, Catfish.db.debugMode and L.MSG_ENABLED or L.MSG_DISABLED))
     elseif msg == "log" then
         if Catfish.UI.DebugLog then
             Catfish.UI.DebugLog:Toggle()
@@ -165,16 +200,16 @@ SlashCmdList["CATFISH"] = function(msg)
             Catfish.Modules.Toys:PrintStatus()
         end
     elseif msg == "help" then
-        Catfish:Print("Commands:")
-        Catfish:Print("  /catfish - Open config panel")
-        Catfish:Print("  /catfish sleep - Toggle sleep/active mode")
-        Catfish:Print("  /catfish stats - Show statistics")
-        Catfish:Print("  /catfish toys - Show toy status")
-        Catfish:Print("  /catfish debug - Toggle debug mode")
-        Catfish:Print("  /catfish log - Show debug log window")
-        Catfish:Print("  /catfish reset - Reset all settings")
+        Catfish:Print(L.HELP_HEADER)
+        Catfish:Print("  /catfish - " .. L.HELP_CONFIG)
+        Catfish:Print("  /catfish sleep - " .. L.MSG_FISHING_STARTED .. "/" .. L.MSG_FISHING_STOPPED)
+        Catfish:Print("  /catfish stats - " .. L.HELP_STATS)
+        Catfish:Print("  /catfish toys - " .. L.HELP_TOYS)
+        Catfish:Print("  /catfish debug - " .. L.HELP_DEBUG)
+        Catfish:Print("  /catfish log - " .. L.CMD_DEBUG)
+        Catfish:Print("  /catfish reset - " .. L.HELP_RESET)
     else
-        Catfish:Print("Unknown command. Use /catfish help for available commands.")
+        Catfish:Print(L.ERROR_UNKNOWN_COMMAND)
     end
 end
 
@@ -203,6 +238,7 @@ frame:RegisterEvent("PLAYER_LOGIN")
 frame:SetScript("OnEvent", function(self, event, arg1, ...)
     if event == "ADDON_LOADED" and arg1 == ADDON_NAME then
         InitDB()
+        LoadLocale()
         Catfish:Debug("Addon loaded, database initialized")
 
         -- Initialize API (secure buttons, etc.)
@@ -279,7 +315,10 @@ frame:SetScript("OnEvent", function(self, event, arg1, ...)
             -- Catfish:Debug("Fishing skill found:", fishingSpell)
         else
             Catfish.hasFishingSkill = false
-            Catfish:Print("No fishing skill detected (or spell data not loaded yet)")
+            -- Only print if L is loaded (may not be on first load)
+            if Catfish.L then
+                Catfish:Debug("No fishing skill detected (or spell data not loaded yet)")
+            end
         end
 
         -- Initialize toys data
